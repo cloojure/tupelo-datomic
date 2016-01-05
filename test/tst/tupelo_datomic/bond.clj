@@ -1,9 +1,9 @@
-(ns tst.tupelo.datomic-bond
-  (:require [tupelo.datomic   :as td]
-            [tupelo.schema    :as ts]
-            [tupelo.core      :refer [spy spyx spyxx it-> safe-> matches? grab wild-match? forv submap? only ]]
-            [datomic.api      :as d]
-            [schema.core      :as s]
+(ns tst.tupelo-datomic.bond
+  (:require [tupelo-datomic.core    :as td]
+            [tupelo.schema          :as ts]
+            [tupelo.core            :refer [spy spyx spyxx it-> safe-> matches? grab wild-match? forv submap? only ]]
+            [datomic.api            :as d]
+            [schema.core            :as s]
   )
   (:use clojure.test)
   (:gen-class))

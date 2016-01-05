@@ -1,6 +1,6 @@
-(defproject tupelo "0.1.56"
-  :description "Tupelo:  Making Clojure Even Sweeter"
-  :url "http://github.com/cloojure/tupelo"
+(defproject tupelo "0.1.57"
+  :description "Tupelo-Datomic:  Making Datomic Even Sweeter"
+  :url "http://github.com/cloojure/tupelo-datomic"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [ [org.clojure/clojure              "1.7.0"]
@@ -12,15 +12,16 @@
                   [criterium                        "0.4.3"]
                   [cheshire                         "5.5.0"]
                   [prismatic/schema                 "1.0.4"]
+                  [tupelo                           "0.1.56"]
                   [com.datomic/datomic-pro          "0.9.5173" :exclusions [joda-time]]
                 ]
   :plugins  [ [codox "0.8.10"] ]
-  :codox {:src-dir-uri "http://github.com/cloojure/tupelo/blob/master/"
+  :codox {:src-dir-uri "http://github.com/cloojure/tupelo-datomic/blob/master/"
           :src-linenum-anchor-prefix "L"}
   :deploy-repositories {  "snapshots" :clojars
                           "releases"  :clojars }
   :update :always; :daily  
-  :main ^:skip-aot tupelo.core
+  :main ^:skip-aot tupelo-datomic.core
   :target-path "target/%s"
   :clean-targets [ "target" ]
   :profiles { ; :dev      { :certificates ["clojars.pom"] }
@@ -33,6 +34,6 @@
   :test-selectors { :default    (complement :slow)
                     :slow       :slow }
 
-  :jvm-opts ["-Xms2g" "-Xmx12g" ]
+  :jvm-opts ["-Xms1g" "-Xmx4g" ]
 ; :jvm-opts ["-Xms4g" "-Xmx8g" "-server"]
 )

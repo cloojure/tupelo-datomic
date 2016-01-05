@@ -1,10 +1,10 @@
-(ns tst.tupelo.datomic
+(ns tst.tupelo-datomic.core
   (:use tupelo.core
         clojure.test )
-  (:require [datomic.api      :as d]
-            [tupelo.datomic   :as td]
-            [tupelo.schema    :as ts]
-            [schema.core      :as s]))
+  (:require [datomic.api            :as d]
+            [tupelo-datomic.core    :as td]
+            [tupelo.schema          :as ts]
+            [schema.core            :as s]))
 
 (set! *warn-on-reflection* false)
 (set! *print-length* nil)

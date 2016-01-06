@@ -3,9 +3,10 @@
 
 Leiningen coordinates:   
 
-image:http://clojars.org/tupelo/latest-version.svg[ http://clojars.org/tupelo ]
+image:http://clojars.org/tupelo-datomic/latest-version.svg[ http://clojars.org/tupelo-datomic ]
 
-=== API Docs:  http://cloojure.github.io/doc/tupelo/tupelo.datomic.html
+
+=== API Docs:  http://cloojure.github.io/doc/tupelo-datomic/tupelo-datomic.html
 
 == Overview
 
@@ -15,7 +16,7 @@ that rarely changes or is needed when dealing with Datomic, making your job near
 
 Suppose we're trying to keep track of information for the world's premiere spy agency. Let's create
 a few attributes that will apply to our heroes & villains (see the executable code 
-link:../../test/tst/tupelo/datomic_bond.clj[in the unit test]).
+link:../../test/tst/tupelo_datomic/bond.clj[in the unit test]).
 
 [source,clojure]
 ----
@@ -389,6 +390,10 @@ given partition by using the `(td/partition-eids ...)` function:
 
 Lots more to come!
 
+
+== Requirements
+ - Clojure 1.7.0
+ - Java 1.8
 
 == License
 

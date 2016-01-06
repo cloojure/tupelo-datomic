@@ -1,4 +1,4 @@
-(defproject tupelo "0.1.57"
+(defproject tupelo "0.1.58"
   :description "Tupelo:  Making Clojure Even Sweeter"
   :url "http://github.com/cloojure/tupelo"
   :license {:name "Eclipse Public License"
@@ -11,7 +11,7 @@
                   [criterium                        "0.4.3"]
                   [cheshire                         "5.5.0"]
                   [prismatic/schema                 "1.0.4"]
-                  [tupelo                           "0.1.56"]
+                  [tupelo                           "0.1.58"]
                   [com.datomic/datomic-pro          "0.9.5173" :exclusions [joda-time]]
                 ]
   :plugins  [ [codox "0.8.10"] ]

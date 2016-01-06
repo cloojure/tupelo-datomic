@@ -1,9 +1,9 @@
-(ns tupelo.datomic
+(ns tupelo-datomic.core 
   (:refer-clojure :exclude [update partition])
   (:require [datomic.api            :as d]
             [tupelo.core            :refer [truthy? safe-> it-> spy spyx spyxx grab any? keep-if forv only glue]]
             [tupelo.schema          :as ts]
-            [tupelo.schema-datomic  :as tsd]
+            [tupelo-datomic.schema  :as tsd]  ; #todo tsd -> tds
             [schema.core            :as s] )
   (:gen-class))
 
@@ -343,7 +343,7 @@
 
   It is an error if the :find clause does not contain a Datomic Pull API request.  "
   [& args]
-  (when-not (tupelo.datomic/contains-pull? args)
+  (when-not (tupelo-datomic.core/contains-pull? args)
     (throw (IllegalArgumentException. 
              (str "query-pull: Only intended for queries using the Datomic Pull API"))))
   `(forv [tuple# (query* ~@args) ]
@@ -354,7 +354,7 @@
   "Test the query macro, returns true on success."
   []
   (let [expanded-result
-          (macroexpand-1 '(tupelo.datomic/query*  :let    [a  (src 1)
+          (macroexpand-1 '(tupelo-datomic.core/query*  :let    [a  (src 1)
                                                            b  val-2]
                                                   :find   [?e]
                                                   :where  [ [?e :person/name ?name] ] ))

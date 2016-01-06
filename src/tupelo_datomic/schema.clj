@@ -1,4 +1,4 @@
-(ns tupelo.schema-datomic
+(ns tupelo-datomic.schema
   (:require [schema.core      :as s]
             [tupelo.schema    :as ts] )
   (:import [java.util HashSet] )

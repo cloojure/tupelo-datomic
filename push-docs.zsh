@@ -2,7 +2,7 @@
 
 # Controlling values
 readonly ghPagesDir=~/gh-pages          # must be absolute pathname
-readonly projName="tupelo"
+readonly projName="tupelo-datomic"
 
 srcDir=$(pwd)/doc                       # absolute pathname of source
 destDir=${ghPagesDir}/${projName}       # absolute pathname of destination

@@ -1,4 +1,4 @@
-(defproject tupelo "0.1.56"
+(defproject tupelo "0.1.57"
   :description "Tupelo:  Making Clojure Even Sweeter"
   :url "http://github.com/cloojure/tupelo"
   :license {:name "Eclipse Public License"
@@ -7,11 +7,11 @@
                   [org.clojure/core.incubator       "0.1.3"]
                   [org.clojure/test.check           "0.5.9"]
                   [org.clojure/core.match           "0.3.0-alpha4"]
-                  [clojure-csv/clojure-csv          "2.0.1"]
                   [clj-time                         "0.7.0"]
                   [criterium                        "0.4.3"]
                   [cheshire                         "5.5.0"]
                   [prismatic/schema                 "1.0.4"]
+                  [tupelo                           "0.1.56"]
                   [com.datomic/datomic-pro          "0.9.5173" :exclusions [joda-time]]
                 ]
   :plugins  [ [codox "0.8.10"] ]
@@ -20,7 +20,7 @@
   :deploy-repositories {  "snapshots" :clojars
                           "releases"  :clojars }
   :update :always; :daily  
-  :main ^:skip-aot tupelo.core
+  :main ^:skip-aot tupelo-datomic.core
   :target-path "target/%s"
   :clean-targets [ "target" ]
   :profiles { ; :dev      { :certificates ["clojars.pom"] }
@@ -33,6 +33,6 @@
   :test-selectors { :default    (complement :slow)
                     :slow       :slow }
 
-  :jvm-opts ["-Xms2g" "-Xmx12g" ]
+  :jvm-opts ["-Xms1g" "-Xmx4g" ]
 ; :jvm-opts ["-Xms4g" "-Xmx8g" "-server"]
 )

@@ -1,553 +1,242 @@
-;   Copyright (c) Alan Thompson. All rights reserved.
-;   The use and distribution terms for this software are covered by the Eclipse Public License 1.0
-;   (http://opensource.org/licenses/eclipse-1.0.php) which can be found in the file epl-v10.html at
-;   the root of this distribution.  By using this software in any fashion, you are agreeing to be
-;   bound by the terms of this license.  You must not remove this notice, or any other, from this
-;   software.
-(ns tst.tupelo.core
-  (:require [clojure.string                         :as str]
-            [clojure.test.check                     :as tc]
-            [clojure.test.check.generators          :as gen]
-            [clojure.test.check.properties          :as prop]
-            [clojure.test.check.clojure-test        :as tst]
-            [tupelo.misc                            :as tm]
-            [schema.core                            :as s] )
+(ns tst.tupelo-datomic.core
   (:use tupelo.core
-        clojure.test ))
+        clojure.test )
+  (:require [datomic.api          :as d]
+            [tupelo-datomic.core  :as td]
+            [tupelo.schema        :as ts]
+            [schema.core          :as s]))
 
-(spyx *clojure-version*)
+(set! *warn-on-reflection* false)
+(set! *print-length* nil)
 
 ; Prismatic Schema type definitions
 (s/set-fn-validation! true)   ; #todo add to Schema docs
 
-(deftest t-spy
-  (testing "basic usage"
-    (let [side-effect-cum-sum (atom 0)  ; side-effect running total
+(def datomic-uri "datomic:mem://tupelo")          ; the URI for our test db
+(def ^:dynamic *conn*)
 
-          ; Returns the sum of its arguments AND keep a running total.
-          side-effect-add!  (fn [ & args ]
-                              (let [result (apply + args) ]
-                                (swap! side-effect-cum-sum + result)
-                                result))
-    ]
-      (is (= "hi => 5"
-          (str/trim (with-out-str (spy (side-effect-add! 2 3) :msg "hi"))) ))
-      (is (= "hi => 5"
-          (str/trim (with-out-str (spy :msg "hi"  (side-effect-add! 2 3)))) ))
-      (is (= "(side-effect-add! 2 3) => 5"
-          (str/trim (with-out-str (spyx (side-effect-add! 2 3)))) ))
-      (is (= 15 @side-effect-cum-sum)))
+;---------------------------------------------------------------------------------------------------
+; clojure.test fixture: setup & teardown for each test
+(use-fixtures :each
+  (fn setup-execute-teardown            ; perform setup, execution, & teardown for each test
+    [tst-fn]
+; setup ----------------------------------------------------------
+    (d/create-database datomic-uri)             ; create the DB
+    (binding [*conn* (d/connect datomic-uri) ]  ; create & save a connection to the db
+; execute --------------------------------------------------------
+      (try
+        (tst-fn)
+; teardown -------------------------------------------------------
+        (finally
+          (d/delete-database datomic-uri))))))
 
-    (is (= "first => 5\nsecond => 25"
-        (str/trim (with-out-str (-> 2
-                                    (+ 3)
-                                    (spy :msg "first" )
-                                    (* 5)
-                                    (spy :msg "second") )))))
-    (is (= "first => 5\nsecond => 25"
-        (str/trim (with-out-str (->> 2
-                                    (+ 3)
-                                    (spy :msg "first" )
-                                    (* 5)
-                                    (spy :msg "second") )))))
+;---------------------------------------------------------------------------------------------------
 
-    (let [side-effect-cum-sum (atom 0)  ; side-effect running total
+(deftest t-new-partition
+  (let [result   (td/new-partition :people ) ]
+    (is (matches? result
+           {:db/id                    #db/id[:db.part/db _]
+            :db.install/_partition    :db.part/db
+            :db/ident                 :people} )))
+  (let [result   (td/new-partition :part.with.ns ) ]
+    (is (matches? result
+           {:db/id                    #db/id[:db.part/db _]
+            :db.install/_partition    :db.part/db
+            :db/ident                 :part.with.ns} )))
+  (let [result   (td/new-partition :some-ns/some-part ) ]
+    (is (matches? result
+           {:db/id                    #db/id[:db.part/db _]
+            :db.install/_partition    :db.part/db
+            :db/ident                 :some-ns/some-part} )))
+)
 
-          ; Returns the sum of its arguments AND keep a running total.
-          side-effect-add!  (fn [ & args ]
-                              (let [result (apply + args) ]
-                                (swap! side-effect-cum-sum + result)
-                                result))
-    ]
-      (is (= "value => 5"
-          (str/trim (with-out-str (spy (side-effect-add! 2 3) :msg "value")))))
-      (is (= "value => 5"
-          (str/trim (with-out-str (spy :msg "value"  (side-effect-add! 2 3))))))
-      (is (= 10 @side-effect-cum-sum))
+(deftest t-new-attribute
+  ; #todo add more testing; verify each option alone pos/neg
+  (testing "basic"
+    (let [result  (td/new-attribute :weapon/type :db.type/keyword
+                      :db.unique/value       :db.unique/identity
+                      :db.cardinality/one    :db.cardinality/many
+                      :db/index :db/fulltext :db/isComponent :db/noHistory ) ]
+      (is (s/validate datomic.db.DbId (:db/id result)))
+      (is (matches? result
+              {:db/id           _       :db/ident               :weapon/type
+               :db/index        true    :db/unique              :db.unique/identity
+               :db/noHistory    true    :db/cardinality         :db.cardinality/many
+               :db/isComponent  true    :db.install/_attribute  :db.part/db
+               :db/fulltext     true    :db/valueType           :db.type/keyword } )))
 
-      (is (= "value => 5" (str/trim (with-out-str (spy "value" (+ 2 3) )))))
-      (is (=   "spy => 5" (str/trim (with-out-str (spy         (+ 2 3) )))))
+    (let [result  (td/new-attribute :name :db.type/string) ]
+      (is (matches? result
+              {:db/id _   :db.install/_attribute  :db.part/db
+               :db/ident        :name
+               :db/valueType    :db.type/string
+               :db/index        true
+               :db/cardinality  :db.cardinality/one  } )))
+    (let [result  (td/new-attribute :name :db.type/string :db/noindex) ]
+      (is (matches? result
+              {:db/id _   :db.install/_attribute  :db.part/db
+               :db/ident        :name
+               :db/valueType    :db.type/string
+               :db/index        false
+               :db/cardinality  :db.cardinality/one  } )))
 
-      (is (= "(str \"abc\" \"def\") => \"abcdef\""
-          (str/trim (with-out-str (spyx (str "abc" "def") )))))
+    (let [result  (td/new-attribute :weapon/type :db.type/keyword
+                      :db.unique/identity    :db.unique/value
+                      :db.cardinality/many   :db.cardinality/one
+                      :db/index :db/fulltext :db/isComponent :db/noHistory ) ]
+      (is (matches? result
+              {:db/id           _       :db/ident               :weapon/type
+               :db/index        true    :db/unique              :db.unique/value
+               :db/noHistory    true    :db/cardinality         :db.cardinality/one
+               :db/isComponent  true    :db.install/_attribute  :db.part/db
+               :db/fulltext     true    :db/valueType           :db.type/keyword } ))))
 
-      (is (thrown? IllegalArgumentException  (spy "some-msg" 42 :msg)))
-    )))
+  (testing "types"
+    (is (thrown? Exception (td/new-attribute :some-attr :db.type/bogus)))
+    (let [result  (td/new-attribute :location :db.type/string) ]
+      (is (matches? result
+              {:db/id           _                     :db/ident       :location
+               :db/valueType    :db.type/string       :db/cardinality :db.cardinality/one
+               :db.install/_attribute :db.part/db } )))
+    (let [result  (td/new-attribute :location :db.type/keyword) ]
+      (is (matches? result
+              {:db/id           _                     :db/ident       :location
+               :db/valueType    :db.type/keyword       :db/cardinality :db.cardinality/one
+               :db.install/_attribute :db.part/db } )))
+    (let [result  (td/new-attribute :location :db.type/boolean) ]
+      (is (matches? result
+              {:db/id           _                     :db/ident       :location
+               :db/valueType    :db.type/boolean       :db/cardinality :db.cardinality/one
+               :db.install/_attribute :db.part/db } )))
+    (let [result  (td/new-attribute :location :db.type/long) ]
+      (is (matches? result
+              {:db/id           _                     :db/ident       :location
+               :db/valueType    :db.type/long       :db/cardinality :db.cardinality/one
+               :db.install/_attribute :db.part/db } )))
+    (let [result  (td/new-attribute :location :db.type/bigint) ]
+      (is (matches? result
+              {:db/id           _                     :db/ident       :location
+               :db/valueType    :db.type/bigint       :db/cardinality :db.cardinality/one
+               :db.install/_attribute :db.part/db } )))
+    (let [result  (td/new-attribute :location :db.type/float) ]
+      (is (matches? result
+              {:db/id           _                     :db/ident       :location
+               :db/valueType    :db.type/float       :db/cardinality :db.cardinality/one
+               :db.install/_attribute :db.part/db } )))
+    (let [result  (td/new-attribute :location :db.type/double) ]
+      (is (matches? result
+              {:db/id           _                     :db/ident       :location
+               :db/valueType    :db.type/double       :db/cardinality :db.cardinality/one
+               :db.install/_attribute :db.part/db } )))
+    (let [result  (td/new-attribute :location :db.type/bigdec) ]
+      (is (matches? result
+              {:db/id           _                     :db/ident       :location
+               :db/valueType    :db.type/bigdec       :db/cardinality :db.cardinality/one
+               :db.install/_attribute :db.part/db } )))
+    (let [result  (td/new-attribute :location :db.type/bytes) ]
+      (is (matches? result
+              {:db/id           _                     :db/ident       :location
+               :db/valueType    :db.type/bytes       :db/cardinality :db.cardinality/one
+               :db.install/_attribute :db.part/db } )))
+    (let [result  (td/new-attribute :location :db.type/instant) ]
+      (is (matches? result
+              {:db/id           _                     :db/ident       :location
+               :db/valueType    :db.type/instant       :db/cardinality :db.cardinality/one
+               :db.install/_attribute :db.part/db } )))
+    (let [result  (td/new-attribute :location :db.type/uuid) ]
+      (is (matches? result
+              {:db/id           _                     :db/ident       :location
+               :db/valueType    :db.type/uuid       :db/cardinality :db.cardinality/one
+               :db.install/_attribute :db.part/db } )))
+    (let [result  (td/new-attribute :location :db.type/uri) ]
+      (is (matches? result
+              {:db/id           _                     :db/ident       :location
+               :db/valueType    :db.type/uri       :db/cardinality :db.cardinality/one
+               :db.install/_attribute :db.part/db } )))
+    (let [result  (td/new-attribute :location :db.type/ref) ]
+      (is (matches? result
+              {:db/id           _                     :db/ident       :location
+               :db/valueType    :db.type/ref       :db/cardinality :db.cardinality/one
+               :db.install/_attribute :db.part/db } ))))
 
-(deftest t-spyxx
-  (let [val1  (into (sorted-map) {:a 1 :b 2})
-        val2  (+ 2 3) ]
-    (is (= "val1 => clojure.lang.PersistentTreeMap->{:a 1, :b 2}"
-        (str/trim (with-out-str (spyxx val1 )))  ))
+  (testing "cardinality & unique"
+    (let [result  (td/new-attribute :location :db.type/string) ]
+      (is (matches? result
+              {:db/id           _                     :db/ident       :location
+               :db/valueType    :db.type/string       :db/cardinality :db.cardinality/one
+               :db.install/_attribute :db.part/db } )))
+    (let [result  (td/new-attribute :location :db.type/string :db.cardinality/many) ]
+      (is (matches? result
+              {:db/id           _                     :db/ident       :location
+               :db/valueType    :db.type/string       :db/cardinality :db.cardinality/many
+               :db.install/_attribute :db.part/db } )))
+    (let [result  (td/new-attribute :location :db.type/string :db.unique/value)  ]
+      (is (matches? result
+              {:db/id           _                     :db/ident       :location
+               :db/valueType    :db.type/string       :db/cardinality :db.cardinality/one
+               :db/unique       :db.unique/value      :db.install/_attribute :db.part/db } )))
+    (let [result  (td/new-attribute :location :db.type/string :db.unique/identity)  ]
+      (is (matches? result
+              {:db/id           _                     :db/ident       :location
+               :db/valueType    :db.type/string       :db/cardinality :db.cardinality/one
+               :db/unique       :db.unique/identity   :db.install/_attribute :db.part/db } ))))
+)
 
-    (is (= "val2 => java.lang.Long->5"
-        (str/trim (with-out-str (spyxx val2 ))) ))
+(deftest t-new-entity
+  (testing "new-entity"
+    (let [result  (td/new-entity     {:person/name "dilbert" :job/type :job.type/sucky} ) ]
+      (is (matches? result {:db/id _  :person/name "dilbert" :job/type :job.type/sucky} ))
+    )
+  )
+  (testing "new-entity with partition"
+    (let [result  (td/new-entity  :dummy.part/name   {:person/name "dilbert" :job/type :job.type/sucky} )
+          dbid    (grab :db/id result)
+          part1   (first dbid)
+          part2   (second dbid) ]
+      ; result: {:db/id #db/id[:dummy.part/name -1000003] :person/name "dilbert" :job/type :job.type/sucky}
+      (is (matches? result   {:db/id _  :person/name "dilbert" :job/type :job.type/sucky} ))
+      (is (matches? dbid #db/id[:dummy.part/name _] ))  ; #db/id[:dummy.part/name -1000003]
+      (is (matches? part1 [:part :dummy.part/name]))
+      (is (matches? part2 [:idx _]))
+      (is (s/validate ts/Eid (second part2))))))
+
+(deftest t-new-enum
+  (is (matches? (td/new-enum :weapon.type/gun)
+                {:db/id #db/id[:db.part/user _]  :db/ident :weapon.type/gun} ))
+  (is (matches? (td/new-enum :gun)
+                {:db/id #db/id[:db.part/user _]  :db/ident :gun} ))
+  (is (thrown? Exception (td/new-enum "gun"))))
+
+; #todo: need more tests for query-*, etc
+
+(deftest t-update
+  (testing "update"
+    (is (matches? (td/update 999 {:person/name "joe"  :car :car.type/bmw} )
+          {:db/id 999 :person/name "joe" :car :car.type/bmw} ))
+    (is (matches? (td/update [:person/name "joe"] {:car :car.type/bmw} )
+          {:db/id [:person/name "joe"] :car :car.type/bmw} ))
   ))
 
-(deftest t-with-spy-indent
-  (let [fn2   (fn []  (with-spy-indent
-                        (spy :msg "msg2" (+ 2 3))))
-        fn1   (fn []  (with-spy-indent
-                        (spy :msg "msg1" (+ 2 3))
-                        (fn2)))
-        fn0   (fn [] (spy :msg "msg0" (+ 2 3))) ]
-    (is (= "  msg2 => 5\n"                  (with-out-str (fn2))))
-    (is (= "  msg1 => 5\n    msg2 => 5\n"   (with-out-str (fn1))))
-    (is (= "msg0 => 5\n"                    (with-out-str (fn0))))
-    ))
+(deftest t-retract-value
+  (testing "retract-value"
+    (is (matches? (td/retract-value 999 :car :car.type/bmw)
+                   [:db/retract 999 :car :car.type/bmw] ))
+    (is (matches? (td/retract-value [:person/name "joe"] :car :car.type/bmw )
+                   [:db/retract [:person/name "joe"] :car :car.type/bmw] ))))
 
-(deftest t-truthy-falsey
-  (let [data [true :a 'my-symbol 1 "hello" \x false nil] ]
-    (testing "basic usage"
-      (let [truthies    (keep-if boolean data)       ; coerce to primitive type
-            falsies     (keep-if not     data) ]     ; unnatural syntax
-        (is (and  (= truthies [true :a 'my-symbol 1 "hello" \x] )
-                  (= falsies  [false nil] ) )))
-      (let [truthies    (keep-if truthy? data)
-            falsies     (keep-if falsey? data) ]
-        (is (and  (= truthies [true :a 'my-symbol 1 "hello" \x] )
-                  (= falsies  [false nil] ) ))
-        (is (every? truthy? [true :a 'my-symbol 1 "hello" \x] ))
-        (is (every? falsey? [false nil] ))
-        (is (not-any? falsey? truthies))
-        (is (not-any? truthy? falsies))))
+(deftest t-retract-entity
+  (testing "retract-entity"
+    (is (matches? (td/retract-entity 999 )
+                 [:db.fn/retractEntity 999] ))
+    (is (matches? (td/retract-entity [:person/name "joe"] )
+                 [:db.fn/retractEntity [:person/name "joe"] ] ))))
 
-    (testing "improved usage"
-      (let [count-if (comp count keep-if) ]
-        (let [num-true    (count-if boolean data)   ; awkward phrasing
-              num-false   (count-if not     data) ] ; doesn't feel natural
-          (is (and  (= 6 num-true)
-                    (= 2 num-false) )))
-        (let [num-true    (count-if truthy? data)   ; matches intent much better
-              num-false   (count-if falsey? data) ]
-          (is (and  (= 6 num-true)
-                    (= 2 num-false) )))))
-  ))
+; The macro test must be in the same source file as the macro definition or it won't expand properly
+(deftest t-macro
+  (is (td/t-query)))
 
-(deftest t-any
-  (is (= true   (any? odd? [1 2 3] ) ))
-  (is (= false  (any? odd? [2 4 6] ) ))
-  (is (= false  (any? odd? []      ) )))
-
-(deftest t-not-empty
-  (testing "basic usage"
-    (is (every?     not-empty? ["1" [1] '(1) {:1 1} #{1}    ] ))
-    (is (not-any?   not-empty? [""  []  '()  {}     #{}  nil] ))
-
-    (is (= (map not-empty? ["1" [1] '(1) {:1 1} #{1} ] )
-           [true true true true true]  ))
-    (is (= (map not-empty? ["" [] '() {} #{} nil] )
-           [false false false false false false ] ))))
-
-(deftest t-conjv
-  (testing "basic usage"
-    (is (= [  2  ]  (conjv  []  2   )))
-    (is (= [  2  ]  (conjv '()  2   )))
-    (is (= [  2 3]  (conjv  []  2  3)))
-    (is (= [  2 3]  (conjv '()  2  3)))
-
-    (is (= [1 2 3]  (conjv  [1] 2  3)))
-    (is (= [1 2 3]  (conjv '(1) 2  3)))
-    (is (= [1 2 3]  (conjv  [1  2] 3)))
-    (is (= [1 2 3]  (conjv '(1  2) 3)))
-
-    (is (= [1 2 3 4]  (conjv  [1  2] 3 4)))
-    (is (= [1 2 3 4]  (conjv '(1  2) 3 4)))
-    (is (= [1 2 3 4]  (conjv  [1] 2  3 4)))
-    (is (= [1 2 3 4]  (conjv '(1) 2  3 4))) )
-
-  (testing "vector elements"
-    (is (=    [ [1 2] [3 4]  [5 6] ]
-      (conjv '( [1 2] [3 4]) [5 6] ) )))
-
-  (testing "lazy seqs/apply"
-    (is (= [0 1 2 3 4 5] (conjv (range 4) 4 5)))
-    (is (= [0 1 2 3 4 5] (apply conjv [0] (range 1 6)))) ))
-
-(deftest t-forv
-  (is (= (forv [x (range 4)] (* x x))
-         [0 1 4 9] ))
-  (is (= (forv [x (range 23)] (* x x))
-         (for  [x (range 23)] (* x x))))
-  (is (= (forv [x (range 5)  y (range 2 9)] (str x y))
-         (for  [x (range 5)  y (range 2 9)] (str x y)))))
-
-(deftest t-glue
-  ; unexpected results
-  (is (= (concat {:a 1} {:b 2} {:c 3} )
-               [ [:a 1] [:b 2] [:c 3] ] ))
-  (is (= (conj [1 2] [3 4])
-               [1 2  [3 4] ] ))
-
-  (let [objs   [ [] '()   {} (sorted-map)   #{} (sorted-set) ] ]
-    (is (= (map sequential? objs) [true  true    false false   false false] ))
-    (is (= (map map?        objs) [false false   true  true    false false] ))
-    (is (= (map set?        objs) [false false   false false   true  true ] )))
-
-  (is (thrown? IllegalArgumentException   (spyxx (glue   [1 2]   {:a 1} ))))
-  (is (thrown? IllegalArgumentException   (spyxx (glue   [1 2]  #{:a 1} ))))
-  (is (thrown? IllegalArgumentException   (spyxx (glue  '(1 2)   {:a 1} ))))
-  (is (thrown? IllegalArgumentException   (spyxx (glue  '(1 2)  #{:a 1} ))))
-  (is (thrown? IllegalArgumentException   (spyxx (glue  #{1 2}   {:a 1} ))))
-
-  (is (= (glue [1 2] [3 4] [5 6])        [1 2 3 4 5 6]))
-  (is (= (glue [] [1 2] )                [1 2] ))
-  (is (= (glue [1 2] [] )                [1 2] ))
-  (is (= (glue [] [1 2] [] )             [1 2] ))
-
-  (is (= (glue {:a 1} {:b 2} {:c 3})     {:a 1 :c 3 :b 2}))
-  (is (= (glue {:a 1} {} )               {:a 1} ))
-  (is (= (glue {} {:a 1} )               {:a 1} ))
-  (is (= (glue {} {:a 1} {} )            {:a 1} ))
-
-  (is (= (glue #{1 2} #{3 4} #{6 5})     #{1 2 6 5 3 4}))
-  (is (= (glue #{} #{1 2} )              #{1 2} ))
-  (is (= (glue #{1 2} #{} )              #{1 2} ))
-  (is (= (glue #{} #{1 2} #{} )          #{1 2} ))
-
-  (is (= (glue (sorted-map) {:a 1} {:b 2} {:c 3})   {:a 1 :b 2 :c 3} ))
-  (is (= (glue (sorted-set) #{1 2} #{3 4} #{6 5})   #{1 2 3 4 5 6}))
-
-  (is (= (glue (sorted-map) {:a 1 :b 2} {:c 3 :d 4} {:e 5 :f 6})
-                            {:a 1 :b 2   :c 3 :d 4   :e 5 :f 6} ))
-  (is (= (seq (glue (sorted-map) {:a 1   :b 2} {:c 3   :d 4   :e 5} {:f 6}))
-                               [ [:a 1] [:b 2] [:c 3] [:d 4] [:e 5] [:f 6] ] ))
-)
-
-(deftest t-grab
-  (let [map1  {:a 1 :b 2}]
-    (is (= 1                                  (grab :a map1)))
-    (is (= 2                                  (grab :b map1)))
-    (is (thrown?    IllegalArgumentException  (grab :c map1))) ))
-
-(deftest t-fetch-in
-  (testing "basic usage"
-    (let [map1  {:a1 "a1"
-                 :a2 { :b1 "b1"
-                       :b2 { :c1 "c1"
-                             :c2 "c2" }}} ]
-      (is (= (fetch-in map1 [:a1] ) "a1" ))
-      (is (= (fetch-in map1 [:a2 :b1] ) "b1" ))
-      (is (= (fetch-in map1 [:a2 :b2 :c1] ) "c1" ))
-      (is (= (fetch-in map1 [:a2 :b2 :c2] ) "c2" ))
-      (is (thrown? IllegalArgumentException  (fetch-in map1 [:a9]) ))
-      (is (thrown? IllegalArgumentException  (fetch-in map1 [:a2 :b9]) ))
-      (is (thrown? IllegalArgumentException  (fetch-in map1 [:a2 :b2 :c9]) ))
-    )))
-
-(deftest t-dissoc-in
-  (let [mm    {:a { :b { :c "c" }}} ]
-    (is (= (dissoc-in mm []         )          mm ))
-    (is (= (dissoc-in mm [:a]       )          {} ))
-    (is (= (dissoc-in mm [:a :b]    )          {:a  {}} ))
-    (is (= (dissoc-in mm [:a :b :c] )          {:a  { :b  {}}} ))
-    (is (= (dissoc-in mm [:a :x :y] )          {:a  { :b  { :c "c" }
-                                                         :x  nil }} ))
-    (is (= (dissoc-in mm [:a :x :y :z] )       {:a  { :b  { :c "c" }
-                                                         :x  { :y nil }}} ))
-    (is (= (dissoc-in mm [:k1 :k2 :k3 :kz] )   {:a  { :b  { :c  "c" }}
-                                                   :k1 { :k2 { :k3 nil }}} )))
-  (let [mm    {:a1 "a1"
-               :a2 { :b1 "b1"
-                     :b2 { :c1 "c1"
-                           :c2 "c2" }}} ]
-    (is (= (dissoc-in mm [:a1] )
-              {:a2 { :b1 "b1"
-                     :b2 { :c1 "c1"
-                           :c2 "c2" }}} ))
-    (is (= (dissoc-in mm [:a2] )
-              {:a1 "a1" } ))
-    (is (= (dissoc-in mm [:a2 :b1] )
-              {:a1 "a1"
-               :a2 { :b2 { :c1 "c1"
-                           :c2 "c2" }}} ))
-    (is (= (dissoc-in mm [:a2 :b2] )
-              {:a1 "a1"
-               :a2 { :b1 "b1" }} ))
-    (is (= (dissoc-in mm [:a2 :b2 :c1] )
-              {:a1 "a1"
-               :a2 { :b1 "b1"
-                     :b2 { :c2 "c2" }}} ))
-    (is (= (dissoc-in mm [:a2 :b2 :c2] )
-              {:a1 "a1"
-               :a2 { :b1 "b1"
-                     :b2 { :c1 "c1" }}} ))))
-
-(deftest t-only
-  (is (= 42 (only [42])))
-  (is (= :x (only [:x])))
-  (is (= "hello" (only ["hello"] )))
-  (is (thrown? IllegalArgumentException (only [])))
-  (is (thrown? IllegalArgumentException (only [:x :y]))))
-
-(deftest t-validate
-  (is (= 3        (validate pos? 3)))
-  (is (= 3.14     (validate number? 3.14 )))
-  (is (= 3.14     (validate #(< 3 % 4) 3.14 )))
-  (is (= [0 1 2]  (validate vector? (vec (range 3)))))
-  (is (= nil      (validate nil? (next []))))
-  (is (= [0 1 2]  (validate #(= 3 (count %)) [0 1 2])))
-  (is (thrown? IllegalStateException (validate number? "hello")))
-  (is (thrown? IllegalStateException (validate truthy? nil)))
-)
-
-(deftest t-keyvals
-  (testing "basic usage"
-    (let [m1 {:a 1 :b 2 :c 3}
-          m2 {:a 1 :b 2 :c [3 4]} ]
-      (is (= m1 (apply hash-map (keyvals m1))))
-      (is (= m2 (apply hash-map (keyvals m2))))
-    )))
-; AWTAWT TODO: add test.check
-
-(deftest t-safe->
-  (is (= 7 (safe-> 3 (* 2) (+ 1))))
-  (let [mm  {:a {:b 2}}]
-    (is (= (safe-> mm :a)     {:b 2} ))
-    (is (= (safe-> mm :a :b)      2))
-    (is (thrown? IllegalArgumentException   (safe-> mm :x)))
-    (is (thrown? IllegalArgumentException   (safe-> mm :a :x)))
-    (is (thrown? IllegalArgumentException   (safe-> mm :a :b :x)))
-  ))
-
-(deftest t-it->
-  (is (= 2  (it-> 1
-                  (inc it)
-                  (+ 3 it)
-                  (/ 10 it))))
-  (let [mm  {:a {:b 2}}]
-    (is (= (it-> mm (:a it)          )  {:b 2} ))
-    (is (= (it-> mm (it :a)  (:b it) )      2  ))))
-
-(deftest t-with-exception-default
-  (testing "basic usage"
-    (is (thrown?    Exception                       (/ 1 0)))
-    (is (= nil      (with-exception-default nil     (/ 1 0))))
-    (is (= :dummy   (with-exception-default :dummy  (/ 1 0))))
-    (is (= 123      (with-exception-default 0       (Long/parseLong "123"))))
-    (is (= 0        (with-exception-default 0       (Long/parseLong "12xy3"))))
-    ))
-
-(deftest t-rel=
-  (is (rel= 1 1 :digits 4 ))
-  (is (rel= 1 1 :tol    0.01 ))
-
-  (is (thrown? IllegalArgumentException  (rel= 1 1 )))
-  (is (thrown? IllegalArgumentException  (rel= 1 1 4)))
-  (is (thrown? IllegalArgumentException  (rel= 1 1 :xxdigits 4      )))
-  (is (thrown? IllegalArgumentException  (rel= 1 1 :digits   4.1    )))
-  (is (thrown? IllegalArgumentException  (rel= 1 1 :digits   0      )))
-  (is (thrown? IllegalArgumentException  (rel= 1 1 :digits  -4      )))
-
-  (is (thrown? IllegalArgumentException  (rel= 1 1 :tol    -0.01    )))
-  (is (thrown? IllegalArgumentException  (rel= 1 1 :tol     "xx"    )))
-  (is (thrown? IllegalArgumentException  (rel= 1 1 :xxtol   0.01    )))
-
-  (is      (rel= 0 0 :digits 3 ))
-
-  (is      (rel= 1 1.001 :digits 3 ))
-  (is (not (rel= 1 1.001 :digits 4 )))
-  (is      (rel= 123450000 123456789 :digits 4 ))
-  (is (not (rel= 123450000 123456789 :digits 6 )))
-
-  (is      (rel= 1 1.001 :tol 0.01 ))
-  (is (not (rel= 1 1.001 :tol 0.0001 )))
-)
-
-(deftest t-keep-if
-  (is (= [0 2 4 6 8]  (keep-if even? (range 10))
-                      (drop-if odd?  (range 10))))
-  (is (= [1 3 5 7 9]  (keep-if odd?  (range 10))
-                      (drop-if even? (range 10)))))
-
-(tst/defspec ^:slow t-keep-if-drop-if 9999
-  (prop/for-all [vv (gen/vector gen/int) ]
-    (let [even-1      (keep-if   even?  vv)
-          even-2      (drop-if   odd?   vv)
-          even-filt   (filter    even?  vv)
-
-          odd-1       (keep-if   odd?   vv)
-          odd-2       (drop-if   even?  vv)
-          odd-rem     (remove    even?  vv) ]
-      (and  (= even-1 even-2 even-filt)
-            (=  odd-1  odd-2  odd-rem))
-    )))
-
-(deftest t-strcat
-  (is (= "a" (strcat \a  )) (strcat [\a]  ))
-  (is (= "a" (strcat "a" )) (strcat ["a"] ))
-  (is (= "a" (strcat 97  )) (strcat [97]  ))
-
-  (is (= "ab" (strcat \a   \b   )) (strcat [\a]  \b   ))
-  (is (= "ab" (strcat \a  [\b]  )) (strcat [\a   \b]  ))
-  (is (= "ab" (strcat "a"  "b"  )) (strcat ["a"] "b"  ))
-  (is (= "ab" (strcat "a" ["b"] )) (strcat ["a"  "b"] ))
-  (is (= "ab" (strcat 97   98   )) (strcat [97]  98   ))
-  (is (= "ab" (strcat 97  [98]  )) (strcat [97   98]  ))
-
-  (is (= "abcd" (strcat              97  98   "cd" )))
-  (is (= "abcd" (strcat             [97  98]  "cd" )))
-  (is (= "abcd" (strcat (byte-array [97  98]) "cd" )))
-
-  (is (= (strcat "I " [ \h \a \v [\e \space (byte-array [97]) 
-                        [ 32 "complicated" (Math/pow 2 5) '( "str" "ing") ]]] )
-         "I have a complicated string" ))
-
-  (let [chars-set   (into #{} (tm/char-seq \a \z))
-        str-val     (strcat chars-set) ]
-    (is (= 26 (count chars-set)))
-    (is (= 26 (count str-val)))
-    (is (= 26 (count (re-seq #"[a-z]" str-val))))))
-
-(deftest t-clip-str
-  (testing "single string"
-    (is (= ""         (clip-str 0 "abcdefg")))
-    (is (= "a"        (clip-str 1 "abcdefg")))
-    (is (= "ab"       (clip-str 2 "abcdefg")))
-    (is (= "abc"      (clip-str 3 "abcdefg")))
-    (is (= "abcd"     (clip-str 4 "abcdefg")))
-    (is (= "abcde"    (clip-str 5 "abcdefg"))))
-  (testing "two strings"
-    (is (= ""         (clip-str 0 "abc defg")))
-    (is (= "a"        (clip-str 1 "abc defg")))
-    (is (= "ab"       (clip-str 2 "abc defg")))
-    (is (= "abc"      (clip-str 3 "abc defg")))
-    (is (= "abc "     (clip-str 4 "abc defg")))
-    (is (= "abc d"    (clip-str 5 "abc defg"))))
-  (testing "two strings & char"
-    (is (= ""         (clip-str 0 "ab" \c "defg")))
-    (is (= "a"        (clip-str 1 "ab" \c "defg")))
-    (is (= "ab"       (clip-str 2 "ab" \c "defg")))
-    (is (= "abc"      (clip-str 3 "ab" \c "defg")))
-    (is (= "abcd"     (clip-str 4 "ab" \c "defg")))
-    (is (= "abcde"    (clip-str 5 "ab" \c "defg"))))
-  (testing "two strings & digit"
-    (is (= ""         (clip-str 0 "ab" 9 "defg")))
-    (is (= "a"        (clip-str 1 "ab" 9 "defg")))
-    (is (= "ab"       (clip-str 2 "ab" 9 "defg")))
-    (is (= "ab9"      (clip-str 3 "ab" 9 "defg")))
-    (is (= "ab9d"     (clip-str 4 "ab" 9 "defg")))
-    (is (= "ab9de"    (clip-str 5 "ab" 9 "defg"))))
-  (testing "vector"
-    (is (= ""               (clip-str  0 [1 2 3 4 5] )))
-    (is (= "["              (clip-str  1 [1 2 3 4 5] )))
-    (is (= "[1"             (clip-str  2 [1 2 3 4 5] )))
-    (is (= "[1 2"           (clip-str  4 [1 2 3 4 5] )))
-    (is (= "[1 2 3 4"       (clip-str  8 [1 2 3 4 5] )))
-    (is (= "[1 2 3 4 5]"    (clip-str 16 [1 2 3 4 5] ))))
-  (testing "map"
-    (is (= ""               (clip-str  0 (sorted-map :a 1 :b 2) )))
-    (is (= "{"              (clip-str  1 (sorted-map :a 1 :b 2) )))
-    (is (= "{:"             (clip-str  2 (sorted-map :a 1 :b 2) )))
-    (is (= "{:a "           (clip-str  4 (sorted-map :a 1 :b 2) )))
-    (is (= "{:a 1, :"       (clip-str  8 (sorted-map :a 1 :b 2) )))
-    (is (= "{:a 1, :b 2}"   (clip-str 16 (sorted-map :a 1 :b 2) ))))
-  (testing "set"
-    (let [tst-set (sorted-set 5 4 3 2 1) ]
-      (is (= ""             (clip-str  0 tst-set )))
-      (is (= "#"            (clip-str  1 tst-set )))
-      (is (= "#{"           (clip-str  2 tst-set )))
-      (is (= "#{1 "         (clip-str  4 tst-set )))
-      (is (= "#{1 2 3 "     (clip-str  8 tst-set )))
-      (is (= "#{1 2 3 4 5}" (clip-str 16 tst-set )))))
-)
-
-(deftest t-seqable
-  (is (seqable?   "abc"))
-  (is (seqable?   {1 2 3 4} ))
-  (is (seqable?  #{1 2 3} ))
-  (is (seqable?  '(1 2 3) ))
-  (is (seqable?   [1 2 3] ))
-  (is (seqable?   (byte-array [1 2] )))
-
-  (is (not (seqable?  1 )))
-  (is (not (seqable? \a ))))
-
-(deftest t-wild-match
-  (testing "vectors"
-    (let [vv [1 2  3]
-          tt [1 2  3]
-          ww [1 :* 3]
-          zz [1 2  4] ]
-      (is (wild-match? vv tt))
-      (is (not (wild-match? vv zz))))
-    (let [vv [1  [2 3]]
-          tt [1  [2 3]]
-          ww [:* [2 3]]
-          zz [9  [2 3]] ]
-      (is (wild-match? vv tt))
-      (is (wild-match? vv ww))
-      (is not (wild-match? vv zz)))
-  )
-  (testing "maps"
-    (let [vv {:a 1 }
-          tt {:a 1 }
-;         w1 {:* 1 }  ; #todo can't match keys now
-          w2 {:a :*}
-          zz {:a 2 }
-    ]
-      (is (wild-match? vv tt))
-;     (is (wild-match? vv w1)) ; #todo
-      (is (wild-match? vv w2))
-      (is (not (wild-match? vv zz)))
-    )
-    (let [vv {:a 1 :b {:c 3}}
-          tt {:a 1 :b {:c 3}}
-;         w1 {:* 1 :b {:c 3}}  ; #todo
-          w2 {:a :* :b {:c 3}}
-;         w3 {:a 1 :* {:c 3}}  ; #todo
-;         w4 {:a 1 :b {:* 3}}  ; #todo
-          w5 {:a 1 :b {:c :*}}
-          zz {:a 2 :b {:c 3}}
-    ]
-      (is (wild-match? vv tt))
-;     (is (wild-match? vv w1)) ; #todo
-      (is (wild-match? vv w2))
-;     (is (wild-match? vv w3)) ; #todo
-;     (is (wild-match? vv w4))
-      (is (wild-match? vv w5))
-      (is (not (wild-match? vv zz)))
-    )
-  )
-  (testing "vecs & maps 1"
-    (let [vv [:a 1  :b {:c  3} ]
-          tt [:a 1  :b {:c  3} ]
-          w1 [:* 1  :b {:c  3} ]
-          w2 [:a :* :b {:c  3} ]
-          w3 [:a 1  :* {:c  3} ]
-;         w4 [:a 1  :b {:*  3} ]
-          w5 [:a 1  :b {:c :*} ]
-          zz [:a 2  :b {:c  3} ]
-    ]
-      (is (wild-match? vv tt))
-      (is (wild-match? vv w1))
-      (is (wild-match? vv w2))
-      (is (wild-match? vv w3))
-;     (is (wild-match? vv w4))
-      (is (wild-match? vv w5))
-      (is (not (wild-match? vv zz)))
-    )
-  )
-  (testing "vecs & maps 2"
-    (let [vv {:a 1  :b [:c  3] }
-          tt {:a 1  :b [:c  3] }
-;         w1 {:* 1  :b [:c  3] }
-          w2 {:a :* :b [:c  3] }
-;         w3 {:a 1  :* [:c  3] }
-          w4 {:a 1  :b [:*  3] }
-          w5 {:a 1  :b [:c :*] }
-          z1 {:a 2  :b [:c  3] }
-          z2 {:a 1  :b [:c  9] }
-    ]
-      (is (wild-match? vv tt))
-;     (is (wild-match? vv w1))
-      (is (wild-match? vv w2))
-;     (is (wild-match? vv w3))
-      (is (wild-match? vv w4))
-      (is (wild-match? vv w5))
-      (is (not (wild-match? vv z1)))
-      (is (not (wild-match? vv z2)))
-    )
-  )
-)
+(deftest t-contains-pull?
+  (let [proxy-contains-pull? #'td/contains-pull? ] ; trick to get around private var
+    (is       (proxy-contains-pull? [:find '[xx (pull [*]) ?y ]] ))
+    (is (not  (proxy-contains-pull? [:find '[xx            ?y ]] )))))
 

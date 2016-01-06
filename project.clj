@@ -1,6 +1,6 @@
-(defproject tupelo "0.1.58"
-  :description "Tupelo:  Making Clojure Even Sweeter"
-  :url "http://github.com/cloojure/tupelo"
+(defproject tupelo-datomic "0.1.59"
+  :description "Tupelo Datomic:  Making Datomic Even Sweeter"
+  :url "http://github.com/cloojure/tupelo-datomic"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [ [org.clojure/clojure              "1.7.0"]
@@ -15,7 +15,7 @@
                   [com.datomic/datomic-pro          "0.9.5173" :exclusions [joda-time]]
                 ]
   :plugins  [ [codox "0.8.10"] ]
-  :codox {:src-dir-uri "http://github.com/cloojure/tupelo/blob/master/"
+  :codox {:src-dir-uri "http://github.com/cloojure/tupelo-datomic/blob/master/"
           :src-linenum-anchor-prefix "L"}
   :deploy-repositories {  "snapshots" :clojars
                           "releases"  :clojars }

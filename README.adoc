@@ -408,4 +408,5 @@ Distributed under the Eclipse Public License, the same as Clojure.
   MBrainz tutorial using Tupelo Datomic
   General Datamoic tutorial using Tupelo
     - including details & gotchas
+  Data import semantics
 

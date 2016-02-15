@@ -163,7 +163,7 @@
                                                [?eid :location    ?loc ] ] )
                     (catch Exception ex (.toString ex)))
   ]
-    (is (matches? beachy [_ "Dr No"] ))           ; found 1 match as expected
+    (is (matches? [_ "Dr No"] beachy ))           ; found 1 match as expected
     (is (re-find #"IllegalStateException" busy)))  ; Exception thrown/caught since 2 people in London
 
 

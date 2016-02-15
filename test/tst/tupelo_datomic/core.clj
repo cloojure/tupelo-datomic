@@ -33,22 +33,18 @@
 ;---------------------------------------------------------------------------------------------------
 
 (deftest t-new-partition
-  (let [result   (td/new-partition :people ) ]
-    (is (matches? result
-           {:db/id                    #db/id[:db.part/db _]
-            :db.install/_partition    :db.part/db
-            :db/ident                 :people} )))
-  (let [result   (td/new-partition :part.with.ns ) ]
-    (is (matches? result
-           {:db/id                    #db/id[:db.part/db _]
-            :db.install/_partition    :db.part/db
-            :db/ident                 :part.with.ns} )))
-  (let [result   (td/new-partition :some-ns/some-part ) ]
-    (is (matches? result
-           {:db/id                    #db/id[:db.part/db _]
-            :db.install/_partition    :db.part/db
-            :db/ident                 :some-ns/some-part} )))
-)
+  (is (matches?  {:db/id                    #db/id[:db.part/db _]
+                  :db.install/_partition    :db.part/db
+                  :db/ident                 :people}
+    (td/new-partition :people )))
+  (is (matches?  {:db/id                    #db/id[:db.part/db _]
+                  :db.install/_partition    :db.part/db
+                  :db/ident                 :part.with.ns} 
+    (td/new-partition :part.with.ns )))
+  (is (matches?  {:db/id                    #db/id[:db.part/db _]
+                  :db.install/_partition    :db.part/db
+                  :db/ident                 :some-ns/some-part} 
+               (td/new-partition :some-ns/some-part))))
 
 (deftest t-new-attribute
   ; #todo add more testing; verify each option alone pos/neg
@@ -58,38 +54,37 @@
                       :db.cardinality/one    :db.cardinality/many
                       :db/index :db/fulltext :db/isComponent :db/noHistory ) ]
       (is (s/validate datomic.db.DbId (:db/id result)))
-      (is (matches? result
-              {:db/id           _       :db/ident               :weapon/type
-               :db/index        true    :db/unique              :db.unique/identity
-               :db/noHistory    true    :db/cardinality         :db.cardinality/many
-               :db/isComponent  true    :db.install/_attribute  :db.part/db
-               :db/fulltext     true    :db/valueType           :db.type/keyword } )))
+      (is (matches?   {:db/id           _       :db/ident               :weapon/type
+                       :db/index        true    :db/unique              :db.unique/identity
+                       :db/noHistory    true    :db/cardinality         :db.cardinality/many
+                       :db/isComponent  true    :db.install/_attribute  :db.part/db
+                       :db/fulltext     true    :db/valueType           :db.type/keyword }
+            result)))
 
-    (let [result  (td/new-attribute :name :db.type/string) ]
-      (is (matches? result
-              {:db/id _   :db.install/_attribute  :db.part/db
-               :db/ident        :name
-               :db/valueType    :db.type/string
-               :db/index        true
-               :db/cardinality  :db.cardinality/one  } )))
-    (let [result  (td/new-attribute :name :db.type/string :db/noindex) ]
-      (is (matches? result
-              {:db/id _   :db.install/_attribute  :db.part/db
-               :db/ident        :name
-               :db/valueType    :db.type/string
-               :db/index        false
-               :db/cardinality  :db.cardinality/one  } )))
+    (is (matches? {:db/id _   :db.install/_attribute  :db.part/db
+                   :db/ident        :name
+                   :db/valueType    :db.type/string
+                   :db/index        true
+                   :db/cardinality  :db.cardinality/one  }
+                  (td/new-attribute :name :db.type/string)))
+
+    (is (matches? {:db/id _   :db.install/_attribute  :db.part/db
+                   :db/ident        :name
+                   :db/valueType    :db.type/string
+                   :db/index        false
+                   :db/cardinality  :db.cardinality/one  } 
+                 (td/new-attribute :name :db.type/string :db/noindex)))
 
     (let [result  (td/new-attribute :weapon/type :db.type/keyword
                       :db.unique/identity    :db.unique/value
                       :db.cardinality/many   :db.cardinality/one
                       :db/index :db/fulltext :db/isComponent :db/noHistory ) ]
-      (is (matches? result
-              {:db/id           _       :db/ident               :weapon/type
-               :db/index        true    :db/unique              :db.unique/value
-               :db/noHistory    true    :db/cardinality         :db.cardinality/one
-               :db/isComponent  true    :db.install/_attribute  :db.part/db
-               :db/fulltext     true    :db/valueType           :db.type/keyword } ))))
+      (is (matches? {:db/id           _       :db/ident               :weapon/type
+                     :db/index        true    :db/unique              :db.unique/value
+                     :db/noHistory    true    :db/cardinality         :db.cardinality/one
+                     :db/isComponent  true    :db.install/_attribute  :db.part/db
+                     :db/fulltext     true    :db/valueType           :db.type/keyword } 
+            result))))
 
   (testing "types"
     (is (thrown? Exception (td/new-attribute :some-attr :db.type/bogus)))

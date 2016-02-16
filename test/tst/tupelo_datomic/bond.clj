@@ -1,7 +1,7 @@
 (ns tst.tupelo-datomic.bond
   (:require [tupelo-datomic.core  :as td]
             [tupelo.schema        :as ts]
-            [tupelo.core          :refer [spy spyx spyxx it-> safe-> matches? grab wild-match? forv submap? only ]]
+            [tupelo.core          :refer [spy spyx spyxx it-> safe-> grab matches? wild-match? forv submap? only ]]
             [datomic.api          :as d]
             [schema.core          :as s]
   )

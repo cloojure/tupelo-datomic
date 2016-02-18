@@ -1,9 +1,10 @@
-(defproject tupelo-datomic "0.1.62"
+(defproject tupelo-datomic "0.1.64"
   :description "Tupelo Datomic:  Making Datomic Even Sweeter"
   :url "http://github.com/cloojure/tupelo-datomic"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [ [org.clojure/clojure              "1.7.0"]
+  :dependencies [ [tupelo                           "0.1.64"]
+                  [org.clojure/clojure              "1.7.0"]
                   [org.clojure/core.incubator       "0.1.3"]
                   [org.clojure/test.check           "0.5.9"]
                   [org.clojure/core.match           "0.3.0-alpha4"]
@@ -11,7 +12,6 @@
                   [criterium                        "0.4.3"]
                   [cheshire                         "5.5.0"]
                   [prismatic/schema                 "1.0.4"]
-                  [tupelo                           "0.1.62"]
                   [com.datomic/datomic-pro          "0.9.5173" :exclusions [joda-time]]
                 ]
   :plugins  [ [codox "0.8.10"] ]

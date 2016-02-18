@@ -60,13 +60,12 @@
                        :db/isComponent  true    :db.install/_attribute  :db.part/db
                        :db/fulltext     true    :db/valueType           :db.type/keyword }
             result)))
-
-    (is (matches? {:db/id _   :db.install/_attribute  :db.part/db
-                   :db/ident        :name
-                   :db/valueType    :db.type/string
-                   :db/index        true
-                   :db/cardinality  :db.cardinality/one  }
-                  (td/new-attribute :name :db.type/string)))
+    (is (wild-match?  {:db/id :*   :db.install/_attribute  :db.part/db
+                       :db/ident        :name
+                       :db/valueType    :db.type/string
+                       :db/index        true
+                       :db/cardinality  :db.cardinality/one }
+          (td/new-attribute :name :db.type/string)))
 
     (is (matches? {:db/id _   :db.install/_attribute  :db.part/db
                    :db/ident        :name

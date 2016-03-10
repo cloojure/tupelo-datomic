@@ -12,7 +12,7 @@
                   [criterium                        "0.4.3"]
                   [cheshire                         "5.5.0"]
                   [prismatic/schema                 "1.0.4"]
-                  [com.datomic/datomic-pro          "0.9.5173" :exclusions [joda-time]]
+                  [com.datomic/datomic-pro          "0.9.5350" :exclusions [joda-time]]
                 ]
   :plugins  [ [codox "0.8.10"] ]
   :codox {:src-dir-uri "http://github.com/cloojure/tupelo-datomic/blob/master/"

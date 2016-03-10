@@ -31,8 +31,31 @@
 ;             :person/email    String    #{ <email constraints> fn.2 ... }
 ;             :person/phone    long      #{ <us=10 digits> fn.2 ... }
 ;             :entity/type     attr      :entity.type/person
-;
 ; Does then [?eid :entity/_type  :entity.type/person] yield a list of all "person" entities?
+;
+;---------------------------------------------------------------------------------------------------
+; Note that issuing a query is a bit like defining a function that is then immediately compiled and
+; used inline (kind of like SQL query strings).  Example
+;
+;     (td/query-entity :let    [$    (live-db)     ; assign multiple query variables
+;                               ?loc "Caribbean"]  ; just like clojure 'let' special form
+;                      :find   [?eid ?name] ; <- output tuple shape
+;                      :where  [ [?eid :person/name ?name      ]
+;                                [?eid :location    ?loc] ] )
+; maybe reformat to:
+;
+;     (td/query-entity :let     [$     (live-db)
+;                                ?loc  "Caribbean" ]
+;                      :return  [?eid ?name]
+;                      :where   { :eid ?eid  :person/name ?name  :location ?loc } )
+; or
+;     (td/query-entity :let     [$     (live-db)
+;                                ?loc  "Caribbean" ]
+;                      :return  [?eid ?name]
+;                      :where   { :eid ?eid  :person/name ?name  }  ; if always last, can just list 1+ maps
+;                               { :eid ?eid  :location    ?loc   :weapon #{ :gun } } )
+;                               ; maps proc'd in order (allows explicit search order when needed)
+;
 ;---------------------------------------------------------------------------------------------------
 
 ; Prismatic Schema type definitions

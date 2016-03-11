@@ -113,18 +113,40 @@
             :person/secret-id 007 } )   ; Note that James has a secret-id but no one else does
 
       (td/update [:person/name "Dr No"] ; update using LookupRef
-        { :weapon/type #{ :weapon/gun :weapon/knife :weapon/guile } } )))
+        { :weapon/type #{ :weapon/gun :weapon/knife :weapon/guile } } ))
 
-  ; Verify current status. Notice there are no duplicate weapons.
-  (is (= (get-people (live-db))
-    #{ {:person/name "James Bond" :location "London"    :weapon/type #{              :weapon/wit :weapon/knife :weapon/gun} :person/secret-id 7 }
-       {:person/name "M"          :location "London"    :weapon/type #{:weapon/guile                           :weapon/gun} }
-       {:person/name "Dr No"      :location "Caribbean" :weapon/type #{:weapon/guile             :weapon/knife :weapon/gun} } } ))
+    ; Verify current status. Notice there are no duplicate weapons.
+    (is (= (get-people (live-db))
+      #{ {:person/name "James Bond" :location "London"    :weapon/type #{              :weapon/wit :weapon/knife :weapon/gun} :person/secret-id 7 }
+         {:person/name "M"          :location "London"    :weapon/type #{:weapon/guile                           :weapon/gun} }
+         {:person/name "Dr No"      :location "Caribbean" :weapon/type #{:weapon/guile             :weapon/knife :weapon/gun} } } ))
 
-  ; Try to add non-existent weapon. This throws since the bogus kw does not match up with an entity.
-  (is (thrown? Exception   @(td/transact *conn* 
-                              (td/update [:person/name "James Bond"] ; update using a LookupRef
-                                { :weapon/type #{ :there.is/no-such-kw } } ))))  ; bogus value for :weapon/type causes exception
+    ; Try to add non-existent weapon. This throws since the bogus kw does not match up with an entity.
+    (is (thrown? Exception   @(td/transact *conn* 
+                                (td/update [:person/name "James Bond"] ; update using a LookupRef
+                                  { :weapon/type #{ :there.is/no-such-kw } } ))))  ; bogus value for :weapon/type causes exception
+
+    ; What if James throws his knife at a villan.  We must remove it from the db.
+    (td/transact *conn* 
+      (td/retract-value james-eid :weapon/type :weapon/knife))
+    (is (= (td/entity-map (live-db) james-eid)  ; lookup by EID 
+           {:person/name "James Bond" :location "London" :weapon/type #{:weapon/wit :weapon/gun} :person/secret-id 7 } ))
+
+    ; James is on a secret mission, & no one knows where...
+    (td/transact *conn* 
+      (td/retract-value james-eid :location "London")) ; We must know the current value to retract it
+    (is (= (td/entity-map (live-db) james-eid)  ; lookup by EID 
+           {:person/name "James Bond" :weapon/type #{:weapon/wit :weapon/gun} :person/secret-id 7 } ))
+    ; James turns up in the Caribbean
+    (td/transact *conn* 
+      (td/update james-eid {:location "Caribbean"} ))  ; add a value where none exists
+    (is (= (td/entity-map (live-db) james-eid)  ; lookup by EID 
+           {:person/name "James Bond" :location "Caribbean" :weapon/type #{:weapon/wit :weapon/gun} :person/secret-id 7 } ))
+    ; James then returns to London
+    (td/transact *conn* 
+      (td/update james-eid {:location "London"} ))  ; overwrite an existing value (implicitly retracts old value, then adds new value)
+    (is (= (td/entity-map (live-db) james-eid)  ; lookup by EID 
+           {:person/name "James Bond" :location "London" :weapon/type #{:weapon/wit :weapon/gun} :person/secret-id 7 } )))
 
   ; For general queries, use td/query.  It returns a set of tuples (a TupleSet).  Duplicate
   ; tuples in the result will be discarded.

@@ -39,8 +39,8 @@
   "Returns a set of entity maps for all entities with the :person/name attribute"
   [db-val :- s/Any]
   (let [eids  (td/query-attr  :let    [$ db-val]
-                              :find   [?e]  ; <- could also use Datomic Pull API
-                              :where  [ [?e :person/name] ] ) ]
+                              :find   [?eid]  ; <- could also use Datomic Pull API
+                              :where  [ [?eid :person/name] ] ) ]
     (set  (for [eid eids]
             (td/entity-map db-val eid)))))
 
@@ -96,8 +96,8 @@
         james-map   (td/entity-map (live-db) james-eid)                       ; lookup by EID  
         james-map2  (td/entity-map (live-db) [:person/name "James Bond"] )    ; lookup by LookupRef
   ]
-    (is (= james-map {:person/name "James Bond" :location "London" :weapon/type #{:weapon/wit :weapon/gun} } ))
-    (is (= james-map james-map2 ))
+    (is (= james-map james-map2 
+           {:person/name "James Bond" :location "London" :weapon/type #{:weapon/wit :weapon/gun} } ))
 
     ; Adding nil values is not allowed, and will generate an Exception.
     (is (thrown? Exception   @(td/transact *conn* 

@@ -47,14 +47,15 @@
 ;     (td/query-entity :let     [$     (live-db)
 ;                                ?loc  "Caribbean" ]
 ;                      :return  [?eid ?name]
-;                      :where   { :eid ?eid  :person/name ?name  :location ?loc } )
+;                      :where   { :person/name ?name  :location ?loc } )  ; attr/val [:eid ?eid] is implied
 ; or
 ;     (td/query-entity :let     [$     (live-db)
 ;                                ?loc  "Caribbean" ]
-;                      :return  [?eid ?name]
-;                      :where   { :eid ?eid  :person/name ?name  }  ; if always last, can just list 1+ maps
-;                               { :eid ?eid  :location    ?loc   :weapon #{ :gun } } )
+;                      :return  [?my-eid ?name]
+;                      :where   { :eid ?my-eid  :person/name ?name  }  ; if always last, can just list 1+ maps
+;                               { :eid ?my-eid  :location    ?loc   :weapon #{ :gun } } )
 ;                               ; maps proc'd in order (allows explicit search order when needed)
+;                               ; explicit [:eid ?my-eid] attr/val overrides default implied entry
 ;
 ;---------------------------------------------------------------------------------------------------
 

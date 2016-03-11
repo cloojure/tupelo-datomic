@@ -148,7 +148,7 @@
     (is (= (td/entity-map (live-db) james-eid)  ; lookup by EID 
            {:person/name "James Bond" :location "London" :weapon/type #{:weapon/wit :weapon/gun} :person/secret-id 7 } ))
 
-    ; (td/entity-map-full ...) includes the EID with the native Datomic keyword :db/id
+    ; (td/entity-map-full ...) includes the EID in the result under the native Datomic keyword :db/id
     (is (= (td/entity-map-full (live-db) james-eid)  ; lookup by EID 
            {:person/name "James Bond" :location "London" :weapon/type #{:weapon/wit :weapon/gun} :person/secret-id 7 
             :db/id james-eid } )))

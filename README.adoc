@@ -36,7 +36,7 @@ link:../../test/tst/tupelo_datomic/bond.clj[in the unit test]).
   (td/new-attribute   :favorite-weapon     :db.type/keyword ))  ; all default values
 ----
 
-Notice that, when using `(td/transace ...)`, we don't need to wrap everything in a vector.
+Notice that, when using `(td/transact ...)`, we don't need to wrap everything in a vector.
 
 For the `:weapon/type` attribute, we want to use an enumerated type since there are only a limited
 number of choices available to our antagonists:

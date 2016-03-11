@@ -318,6 +318,7 @@
                   (str "query-attr: can return only one attr per entity " first-tuple#))))
         (map only result-tupleset#))))
 
+; #todo allow ":find [:*]" to return entire entity map like "select * from" in sql
 (defmacro query-entity
  "Returns a result tuple for a single entity (i.e. [s/Any]). Usage:
 
@@ -378,22 +379,27 @@
   "Test the query macro, returns true on success."
   []
   (let [expanded-result
-          (macroexpand-1 '(tupelo-datomic.core/query*  :let    [a  (src 1)
-                                                           b  val-2]
-                                                  :find   [?e]
-                                                  :where  [ [?e :person/name ?name] ] ))
-  ]
-    (= expanded-result
-       '(datomic.api/q (quote { :find [?e]
-                                :in [a b]
-                                :where [[?e :person/name ?name]] } )
-                       (src 1) val-2))))
+          (macroexpand-1 '(tupelo-datomic.core/query*   :let    [a  (src 1)
+                                                                 b  val-2]
+                                                        :find   [?e]
+                                                        :where  [ [?e :person/name ?name] ] )) ]
+    (= expanded-result   '(datomic.api/q (quote { :find [?e]
+                                                  :in [a b]
+                                                  :where [[?e :person/name ?name]] } )
+                                         (src 1) val-2))))
 
 ;---------------------------------------------------------------------------------------------------
 ; Informational functions
 
-; #todo - need test
-(s/defn entity-map :- ts/KeyMap
+(s/defn entity-map-full :- ts/KeyMap  ; #todo - need test & -> demo/doc
+  "Returns a map of an entity's attribute-value pairs. A simpler, eager version of datomic/entity."
+  [db-val         :- datomic.db.Db
+   entity-spec    :- ts/EntitySpec ]
+  (let [ entity   (d/entity db-val entity-spec)   ; does not include :db/id attr/val
+         eid      (:db/id entity) ]               ; unless we explicitly ask for it
+    (into {:db/id eid} entity)))
+
+(s/defn entity-map :- ts/KeyMap  ; #todo - need test
   "Returns a map of an entity's attribute-value pairs. A simpler, eager version of datomic/entity."
   [db-val         :- datomic.db.Db
    entity-spec    :- ts/EntitySpec ]

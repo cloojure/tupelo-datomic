@@ -146,7 +146,12 @@
     (td/transact *conn* 
       (td/update james-eid {:location "London"} ))  ; overwrite an existing value (implicitly retracts old value, then adds new value)
     (is (= (td/entity-map (live-db) james-eid)  ; lookup by EID 
-           {:person/name "James Bond" :location "London" :weapon/type #{:weapon/wit :weapon/gun} :person/secret-id 7 } )))
+           {:person/name "James Bond" :location "London" :weapon/type #{:weapon/wit :weapon/gun} :person/secret-id 7 } ))
+
+    ; (td/entity-map-full ...) includes the EID with the native Datomic keyword :db/id
+    (is (= (td/entity-map-full (live-db) james-eid)  ; lookup by EID 
+           {:person/name "James Bond" :location "London" :weapon/type #{:weapon/wit :weapon/gun} :person/secret-id 7 
+            :db/id james-eid } )))
 
   ; For general queries, use td/query.  It returns a set of tuples (a TupleSet).  Duplicate
   ; tuples in the result will be discarded.

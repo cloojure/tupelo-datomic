@@ -1,10 +1,10 @@
 (ns tupelo-datomic.core 
   (:refer-clojure :exclude [update partition])
   (:require [datomic.api            :as d]
-            [tupelo.core            :refer [truthy? safe-> it-> spy spyx spyxx grab any? keep-if forv only glue]]
             [tupelo.schema          :as ts]
             [tupelo-datomic.schema  :as tsd]  ; #todo tsd -> tds
             [schema.core            :as s] )
+  (:use tupelo.core)
   (:gen-class))
 
 ;---------------------------------------------------------------------------------------------------
@@ -251,6 +251,54 @@
   [conn & tx-specs]
   (d/transact conn tx-specs))
 
+;---------------------------------------------------------------------------------------------------
+; Find
+
+; #todo need checks to stop collection result (:find [?e ...])
+; #todo and scalar result (:find [?e .])
+(defmacro ^:no-doc find* ; #todo remember 'with'
+  ; returns a HashSet of datomic entity objects
+  "Base macro for improved API syntax for datomic.api/q query function (Entity API)"
+  [& args]
+  (let [args-map    (apply hash-map args)
+        _ (spyx args-map)
+        let-vec     (grab :let args-map)
+        let-map     (apply hash-map let-vec)
+        let-syms    (keys let-map)
+        let-srcs    (vals let-map)
+        find-vec    (grab :find args-map)
+        where-vec   (grab :where args-map)
+        ]
+    (when-not (vector? let-vec)
+      (throw (IllegalArgumentException. (str "find*: value for :let must be a vector; received=" let-vec))))
+    (when-not (vector? find-vec)
+      (throw (IllegalArgumentException. (str "find*: value for :find must be a vector; received=" find-vec))))
+    (when-not (vector? where-vec)
+      (throw (IllegalArgumentException. (str "find*: value for :where must be a vector; received=" where-vec))))
+    `(d/q  '{:find   ~find-vec
+             :where  ~where-vec
+             :in     [ ~@let-syms ] }
+           ~@let-srcs)))
+
+; #todo: rename :find -> :select or :return or :result ???
+(defmacro find
+  "Returns query results as a set of tuples (i.e. a TupleSet, or #{ [s/Any] } in Prismatic Schema),
+   where each tuple is unique. Usage:
+
+    (td/find   :let    [$        (d/db *conn*)     ; assign multiple variables just like
+                         ?name    \"Caribbean\"]    ;   in Clojure 'let' special form
+                :find   [?e ?name]
+                :where  [ [?e :person/name ?name]
+                          [?e :location ?loc] ] )
+
+  Unlike datomic.api/q, the query form does not need to be wrapped in a map literal nor is any
+  quoting required. Most importantly, the :in keyword has been replaced with the :let keyword, and
+  the syntax has been copied from the Clojure let special form so that both the query variables (the
+  variables $ and ?name in this case) are more closely aligned with their actual values. Also, the
+  implicit DB $ must be explicitly tied to its data source in all cases (as shown above)."
+  [& args]
+  `(set (for [tuple# (find* ~@args) ]
+          (vec tuple#))))
 ;---------------------------------------------------------------------------------------------------
 ; Query
 

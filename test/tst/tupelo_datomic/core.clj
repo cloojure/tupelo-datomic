@@ -6,6 +6,7 @@
             [tupelo.schema        :as ts]
             [schema.core          :as s]))
 
+(spyx *clojure-version*)
 (set! *warn-on-reflection* false)
 (set! *print-length* nil)
 

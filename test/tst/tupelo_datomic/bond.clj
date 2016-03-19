@@ -8,6 +8,7 @@
   (:use clojure.test)
   (:gen-class))
 
+(spyx *clojure-version*)
 (set! *warn-on-reflection* false)
 (set! *print-length* nil)
 (s/set-fn-validation! true)             ; enable Prismatic Schema type definitions (#todo add to Schema docs)

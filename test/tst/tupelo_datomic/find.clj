@@ -74,7 +74,7 @@
 (defn verify-james-data []
   (println "verify-james-data")
   ; Verify current status. Notice there are no duplicate weapons.
-  (is (= (spyx (get-people))
+  (is (= (get-people)
          #{ {:person/name "James Bond" :location "London"    :weapon/type #{              :weapon/wit :weapon/knife :weapon/gun} :person/secret-id 7 }
             {:person/name "M"          :location "London"    :weapon/type #{:weapon/guile                           :weapon/gun}}
             {:person/name "Dr No"      :location "Caribbean" :weapon/type #{:weapon/guile             :weapon/knife :weapon/gun}}} )))
@@ -97,17 +97,28 @@
           (d/delete-database datomic-uri))))))
 
 ;---------------------------------------------------------------------------------------------------
-
-
-; #todo: need more tests for query-*, etc
-
-(deftest t-update
-  (spyx "t-update")
-  (is (= 1 1)))
-
-
 ; The macro test must be in the same source file as the macro definition or it won't expand properly
 ;(deftest t-macro
 ;  (is (td/t-query)))
+
+(deftest t-find
+  (let [james-eid  (td/query-value  :let    [$ (d/db *conn*)]
+                                    :find   [?eid]
+                                    :where  [[?eid :person/name "James Bond"]]) ]
+    (let [eids  (td/find  :let    [$ (d/db *conn*)]
+                          :find   [?eid]
+                          :where  {:db/id ?eid :person/name "James Bond"  :weapon/type :weapon/wit}
+                          {:db/id ?eid :location "London"} )
+          ]
+      (is (= #{ [james-eid] } eids)))
+    (let [eids  (td/find  :let    [$ (d/db *conn*)]
+                          :find   [?eid]
+                          :where  {:db/id ?eid :person/name "James Bond"  :weapon/type :weapon/wit}
+                                  {:db/id ?eid :location "Caribbean"} )
+          ]
+      (is (= #{} eids)))
+  )
+)
+
 
 

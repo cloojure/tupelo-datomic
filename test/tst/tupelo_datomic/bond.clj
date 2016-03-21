@@ -158,7 +158,7 @@
   ; tuples in the result will be discarded.
   (let [tuple-set   (td/find   :let    [$ (live-db)]
                                :find   [?name ?loc] ; <- shape of output tuples
-                               :where  {:person/name ?name :location ?loc } )  ; #todo allos ?* as wildcard???
+                               :where  {:person/name ?name :location ?loc} )  ; #todo alias ?* as wildcard???
   ]
     (s/validate  ts/TupleSet  tuple-set)       ; verify expected type using Prismatic Schema
     (s/validate #{ [s/Any] }  tuple-set)       ; literal definition of TupleSet

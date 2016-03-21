@@ -196,7 +196,7 @@
                     (catch Exception ex (.toString ex)))
   ]
     (is (matches? [_ "Dr No"] beachy ))           ; found 1 match as expected
-    (is (re-find #"IllegalStateException" busy)))  ; Exception thrown/caught since 2 people in London
+    (is (re-find #"Exception" busy)))  ; Exception thrown/caught since 2 people in London
 
 
   ; If you know there is (or should be) only a single scalar answer, you can get the scalar value as
@@ -222,8 +222,8 @@
                     (catch Exception ex (.toString ex)))
   ]
     (is (= beachy "Dr No"))                       ; found 1 match as expected
-    (is (re-find #"IllegalStateException" busy))   ; Exception thrown/caught since 2 people in London
-    (is (re-find #"IllegalStateException" multi))) ; Exception thrown/caught since 2-vector is not scalar
+    (is (re-find #"Exception" busy))   ; Exception thrown/caught since 2 people in London
+    (is (re-find #"Exception" multi))) ; Exception thrown/caught since 2-vector is not scalar
 
   ; If you wish to retain duplicate results on output, you must use td/query-pull and the Datomic
   ; Pull API to return a list of results (instead of a set).

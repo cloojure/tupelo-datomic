@@ -255,10 +255,11 @@
 ; Find
 
 ; Process the ":where" clause in the find query
-(defn find-where [maps]     ; #todo maybe make like:  (or (curr-map :db/id)  ; fall through if nil
-  (apply glue               ; #todo                       (curr-map :eid)    ; fall through if nil
-    (forv [curr-map maps]        ; #todo                       '_ )          ; default value is "don't care"
-      (let [eid-vec       [ (get  curr-map :db/id '_ ) ]          ; like [?eid] or [_]
+(defn find-where [maps]
+  (apply glue
+    (forv [curr-map maps]
+      (let [eid-vec       (only (vec (merge {:db/id (gensym "dummy-eid-") }
+                                            (select-keys curr-map [:db/id]))))
             curr-map      (dissoc curr-map :db/id)
             inner-result  (forv [entry curr-map]
                             (glue eid-vec entry)) ]
@@ -270,7 +271,8 @@
   ; returns a HashSet of datomic entity objects
   "Base macro for improved API syntax for datomic.api/q query function (Entity API)"
   [& args]
-  (spy :msg "find-base" args)
+  (newline)
+  (println "find-base =>" args)
   (let [let-find-map      (apply hash-map (take 4 args))                ; _ (spyx let-find-map)
         where-entries     (find-where (drop 5 args))                    ; _ (spyx where-entries)
         args-map          (glue let-find-map {:where where-entries} )   ; _ (spyx args-map)
@@ -311,12 +313,51 @@
   [& args]
   `(set (for [tuple# (find-base ~@args) ]
           (vec tuple#))))
+
+(defmacro find-attr
+ "Returns a set of unique attribute values (i.e. #{s/Any}). Any duplicate values will be
+  discarded. Usage:
+
+    (td/find-attr  :let    [$        (d/db *conn*)       ; assign multiple variables just like
+                           ?name    \"James Bond\"]      ;   in Clojure 'let' special form
+                   :find   [?e]
+                   :where  [ [?e :person/name ?name] ] )
+
+  It is an error if more than one attribute is returned."
+  [& args]
+  `(set (map only (find-base ~@args))))  ; return 1 attribute value from each entity
+
+; #todo allow ":find [:*]" to return entire entity map like "select * from" in sql
+(defmacro find-entity
+ "Returns a result tuple for a single entity (i.e. [s/Any]). Usage:
+
+    (td/find-entity  :let    [$ (d/db *conn*)]
+                     :find   [?eid ?name]  ; <- output tuple shape
+                     :where  [ [?eid :person/name ?name      ]
+                               [?eid :location    \"Caribbean\"] ] )
+
+  It is an error if more than one matching entity is found."
+  [& args]
+  `(vec (only (find-base ~@args)))) ; return exactly 1 entity
+
+(defmacro find-value
+ "Returns the value of a single attribute for a single entity.  Usage:
+
+    (td/find-value  :let    [$      (d/db *conn*)
+                             ?name  \"James Bond\"]
+                    :find   [?eid]  ; <- output tuple shape
+                    :where  [ [?eid :person/name ?name] ] )
+
+   It is an error if more than one matching value is found."
+  [& args]
+  `(only (find-entity ~@args))) ; retrieve 1 value from 1 entity
+
 ;---------------------------------------------------------------------------------------------------
 ; Query
 
 ; #todo need checks to stop collection result (:find [?e ...])
 ; #todo and scalar result (:find [?e .])
-(defmacro ^:no-doc query-core ; #todo remember 'with'
+(defmacro ^:no-doc query-base ; #todo remember 'with'
   ; returns a HashSet of datomic entity objects
   "Base macro for improved API syntax for datomic.api/q query function (Entity API)"
   [& args]
@@ -329,11 +370,11 @@
         where-vec   (grab :where args-map)
   ]
     (when-not (vector? let-vec)
-      (throw (IllegalArgumentException. (str "query-core: value for :let must be a vector; received=" let-vec))))
+      (throw (IllegalArgumentException. (str "query-base: value for :let must be a vector; received=" let-vec))))
     (when-not (vector? find-vec)
-      (throw (IllegalArgumentException. (str "query-core: value for :find must be a vector; received=" find-vec))))
+      (throw (IllegalArgumentException. (str "query-base: value for :find must be a vector; received=" find-vec))))
     (when-not (vector? where-vec)
-      (throw (IllegalArgumentException. (str "query-core: value for :where must be a vector; received=" where-vec))))
+      (throw (IllegalArgumentException. (str "query-base: value for :where must be a vector; received=" where-vec))))
    `(d/q  '{:find   ~find-vec
             :where  ~where-vec
             :in     [ ~@let-syms ] }
@@ -356,7 +397,7 @@
   variables $ and ?name in this case) are more closely aligned with their actual values. Also, the
   implicit DB $ must be explicitly tied to its data source in all cases (as shown above)."
   [& args]
-  `(set (for [tuple# (query-core ~@args) ]
+  `(set (for [tuple# (query-base ~@args) ]
           (vec tuple#))))
 
 (defmacro query-attr
@@ -370,7 +411,7 @@
 
   It is an error if more than one attribute is returned."
   [& args]
-  `(set (map only (query-core ~@args))))  ; return 1 attribute value from each entity
+  `(set (map only (query-base ~@args))))  ; return 1 attribute value from each entity
 
 ; #todo allow ":find [:*]" to return entire entity map like "select * from" in sql
 (defmacro query-entity
@@ -383,7 +424,7 @@
 
   It is an error if more than one matching entity is found."
   [& args]
-  `(vec (only (query-core ~@args)))) ; return exactly 1 entity
+  `(vec (only (query-base ~@args)))) ; return exactly 1 entity
 
 (defmacro query-value
  "Returns the value of a single attribute for a single entity.  Usage:
@@ -417,7 +458,7 @@
   (when-not (tupelo-datomic.core/contains-pull? args)
     (throw (IllegalArgumentException. 
              (str "query-pull: Only intended for queries using the Datomic Pull API"))))
-  `(forv [tuple# (query-core ~@args) ]
+  `(forv [tuple# (query-base ~@args) ]
       (vec tuple#)))
 
 ; #todo: write blog post/forum letter about this testing technique
@@ -425,7 +466,7 @@
   "Test the query macro, returns true on success."
   []
   (let [expanded-result
-          (macroexpand-1 '(tupelo-datomic.core/query-core   :let    [a  (src 1)
+          (macroexpand-1 '(tupelo-datomic.core/query-base   :let    [a  (src 1)
                                                                      b  val-2 ]
                                                             :find   [?e]
                                                             :where  [ [?e :person/name ?name] ] )) ]

@@ -29,7 +29,6 @@
             (td/entity-map (d/db *conn*) eid)))))
 
 (defn add-james-data []
-  (println "add-james-data")
   ; Create some new attributes. Required args are the attribute name (an optionally namespaced
   ; keyword) and the attribute type (full listing at http://docs.datomic.com/schema.html). We wrap
   ; the new attribute definitions in a transaction and immediately commit them into the DB.
@@ -72,7 +71,6 @@
                           { :weapon/type #{ :weapon/gun :weapon/knife :weapon/guile }} )))
 
 (defn verify-james-data []
-  (println "verify-james-data")
   ; Verify current status. Notice there are no duplicate weapons.
   (is (= (get-people)
          #{ {:person/name "James Bond" :location "London"    :weapon/type #{              :weapon/wit :weapon/knife :weapon/gun} :person/secret-id 7 }
@@ -110,7 +108,7 @@
                           :where  {:db/id ?eid :person/name "James Bond"  :weapon/type :weapon/wit}
                           {:db/id ?eid :location "London"} )
           ]
-      (is (= #{ [james-eid] } eids)))
+      (is (= james-eid (only (only eids)))))
     (let [eids  (td/find  :let    [$ (d/db *conn*)]
                           :find   [?eid]
                           :where  {:db/id ?eid :person/name "James Bond"  :weapon/type :weapon/wit}

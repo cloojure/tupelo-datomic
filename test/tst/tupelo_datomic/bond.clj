@@ -158,9 +158,8 @@
   ; tuples in the result will be discarded.
   (let [tuple-set   (td/find   :let    [$ (live-db)]
                                :find   [?name ?loc] ; <- shape of output tuples
-                               :where  {:db/id ?eid :person/name ?name :location ?loc } )  ; #todo allos ?* as wildcard???
+                               :where  {:person/name ?name :location ?loc } )  ; #todo allos ?* as wildcard???
   ]
-    (spyx tuple-set)
     (s/validate  ts/TupleSet  tuple-set)       ; verify expected type using Prismatic Schema
     (s/validate #{ [s/Any] }  tuple-set)       ; literal definition of TupleSet
     (is (= tuple-set #{ ["Dr No"       "Caribbean"]      ; Even though London is repeated, each tuple is
@@ -201,7 +200,7 @@
   (let [beachy    (td/find-value   :let    [$    (live-db)     ; assign multiple find variables 
                                             ?loc "Caribbean"]  ; just like clojure 'let' special form
                                    :find   [?name]
-                                   :where  {:db/id ?eid :person/name ?name :location ?loc} )
+                                   :where  {:person/name ?name :location ?loc} )
         busy      (try ; error - multiple results for London
                     (td/find-value   :let    [$    (live-db)
                                               ?loc "London"]

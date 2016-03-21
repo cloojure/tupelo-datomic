@@ -258,8 +258,7 @@
 (defn find-where [maps]
   (apply glue
     (forv [curr-map maps]
-      (let [eid-vec       (only (vec (merge {:db/id (gensym "dummy-eid-") }
-                                            (select-keys curr-map [:db/id]))))
+      (let [eid-vec       [ (get curr-map :db/id (symbol "?tupelo-dummy-eid")) ]
             curr-map      (dissoc curr-map :db/id)
             inner-result  (forv [entry curr-map]
                             (glue eid-vec entry)) ]
@@ -271,8 +270,7 @@
   ; returns a HashSet of datomic entity objects
   "Base macro for improved API syntax for datomic.api/q query function (Entity API)"
   [& args]
-  (newline)
-  (println "find-base =>" args)
+  ; (newline) (println "find-base =>" args)
   (let [let-find-map      (apply hash-map (take 4 args))                ; _ (spyx let-find-map)
         where-entries     (find-where (drop 5 args))                    ; _ (spyx where-entries)
         args-map          (glue let-find-map {:where where-entries} )   ; _ (spyx args-map)
@@ -281,8 +279,9 @@
         let-syms          (keys let-map)                                ; _ (spyx let-syms)
         let-srcs          (vals let-map)                                ; _ (spyx let-srcs)
         find-vec          (grab :find args-map)                         ; _ (spyx find-vec)
-        where-vec         (grab :where args-map)                          _ (spyx where-vec)
+        where-vec         (grab :where args-map)                        ; _ (spyx where-vec)
   ]
+    (flush)
     (when-not (vector? let-vec)
       (throw (IllegalArgumentException. (str "find-base: value for :let must be a vector; received=" let-vec))))
     (when-not (vector? find-vec)

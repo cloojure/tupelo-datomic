@@ -182,7 +182,7 @@ the above would look like this:
 [source,clojure]
 ----
 [
-;  <----------------- Maps of Attribute-Value Pairs --------------------------------------->
+;  <----------------- Maps of Attribute-Value Pairs ----------------------------------------->
    { :db/id 1001  :person/name "James Bond"  :location "London"     ...  :person/secret-id 7 }
    { :db/id 1002  :person/name "M"           :location "London"     ...                      }
    { :db/id 1003  :person/name "Dr No"       :location "Caribbean"  ...                      }

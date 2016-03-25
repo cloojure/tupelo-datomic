@@ -253,10 +253,10 @@ in three ways.
 
 The above query matches any entity that has both a `:person/name` and a `:location` attribute. For
 each matching entity, the two values corresponding to `:person/name` and `:location` will be bound
-to the `?name` and `?loc` symbols, respectively, and then used to generate an output tuple of the shape 
-`[?name ?loc]`. These tuples are added to the result set which will be returned to the caller.  Since
-the returned value is a normal Clojure set, duplicate elements are not allowed and any non-unique
-values will be discarded.
+to the `?name` and `?loc` symbols, respectively, which are used to generate an output tuple of the
+shape `[?name ?loc]`. Each output tuple is added to the result set, which is returned to the caller.
+Since the returned value is a normal Clojure set, duplicate elements are not allowed and any
+non-unique values will be discarded.
 
 Receiving a TupleSet result is the most general case, but in many instances we
 can save some effort.  If we are retrieving the value for a single attribute per

@@ -256,7 +256,7 @@
 
 ; Process the ":where" clause in the find query
 (s/defn ^:no-doc find-where :- ts/TupleList
-  [maps :- [ts/Map]]
+  [maps :- ts/MapList]
   (apply glue
     (forv [curr-map maps]
       (let [eid-vec       [ (get curr-map :db/id (symbol "?tupelo-dummy-eid")) ]

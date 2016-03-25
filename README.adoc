@@ -173,18 +173,19 @@ This points out an *_important_* conceptual point regarding Datomic:
 
 ==== The Datomic Conceptual Model:
 
-[big]#*_Datomic is conceptually structured as a collection of simple maps, each of which has a unique :eid
-value and an arbitrary collection of attribute-value pairs._*#
+[big]#*_Datomic is conceptually structured as a collection of simple maps, each of which has a
+unique Entity ID and an arbitrary collection of attribute-value pairs._*#
 
-A Clojure example equivalent to the above would look like:
+The "Entity ID" or EID is encoded under the key `:db/id` in Datomic. A Clojure example equivalent to
+the above would look like this:
 
 [source,clojure]
 ----
 [
 ;  <----------------- Maps of Attribute-Value Pairs --------------------------------------->
-   { :eid 1001  :person/name "James Bond"  :location "London"     ...  :person/secret-id 7 }
-   { :eid 1002  :person/name "M"           :location "London"     ...                      }
-   { :eid 1003  :person/name "Dr No"       :location "Caribbean"  ...                      }
+   { :db/id 1001  :person/name "James Bond"  :location "London"     ...  :person/secret-id 7 }
+   { :db/id 1002  :person/name "M"           :location "London"     ...                      }
+   { :db/id 1003  :person/name "Dr No"       :location "Caribbean"  ...                      }
 ]
 ----
 
@@ -216,7 +217,7 @@ When querying for values using Tupelo Datomic, the fundamental result type is a
 TupleSet (a Clojure set containing unique Clojure vectors).  This overcomes a
 possible problem with the native Datomic return type of datomic.query.EntityMap,
 which is lazy-loading and may appear to be missing data (unless forced).  Here
-is an example of Tupelo Datomic query in action:
+is an example of the Tupelo Datomic `find` function in action:
 
 [source,clojure]
 ----
@@ -249,6 +250,13 @@ in three ways.
 
 . Most importantly, the Datalog-inspired query syntax has been simplified with an equivalent syntax
   based on plain Clojure maps.
+
+The above query matches any entity that has both a `:person/name` and a `:location` attribute. For
+each matching entity, the two values corresponding to `:person/name` and `:location` will be bound
+to the `?name` and `?loc` symbols, respectively, and then used to generate an output tuple of the shape 
+`[?name ?loc]`. These tuples are added to the result set which will be returned to the caller.  Since
+the returned value is a normal Clojure set, duplicate elements are not allowed and any non-unique
+values will be discarded.
 
 Receiving a TupleSet result is the most general case, but in many instances we
 can save some effort.  If we are retrieving the value for a single attribute per
@@ -293,17 +301,24 @@ In this case, we don't need to wrap the resulting tuple in a set and we can use 
   (is (matches? [_ "Dr No"] beachy ))           ; found 1 match as expected
   (is (re-find #"Exception" busy)))  ; Exception thrown/caught since 2 people in London
 ----
+Note that, in both of the calls to `find-entity`, the symbol `?loc` is bound to the string "Caribbean",
+while the symbols `?eid` and `?name` are left free. This means the query map in the `:where` clause
+will match any entity that posseses all three attributes `:db/id`, `:location`, and `:person/name`
+(note that every entity has the `:db/id` attribute by definition).  In addition, only entities 
+whose `:location` attribute has the value "Caribbean" will be selected. Once an entity is selected,
+its values for the attributes `:db/id` and `:location` are bound to the symbols `?eid` and `?name`, 
+respectively, and the output tuple `[?eid ?name]` is added to the result set.
 
-Of course, in some instances you may want only the value of only a single attribute for a single
+Of course, in some instances you may only want the value of a single attribute for a single
 entity.  In this case, we may use the function `td/query-value`, which returns a single scalar
-value instead of a set of tuples of scalars:
+result instead of a set of tuples of scalars:
 
 [source,clojure]
 ----
 ; If you know there is (or should be) only a single scalar answer, you can get the scalar value as
 ; output using td/find-value. It is an error if more than one tuple or value is present.
-(let [beachy    (td/find-value   :let    [$    (live-db)     ; assign multiple find variables 
-                                          ?loc "Caribbean"]  ; just like clojure 'let' special form
+(let [beachy    (td/find-value   :let    [$    (live-db)     ; Find the name of the 
+                                          ?loc "Caribbean"]  ; only person in the Caribbean
                                  :find   [?name]
                                  :where  {:person/name ?name :location ?loc} )
       busy      (try ; error - multiple results for London
@@ -312,7 +327,7 @@ value instead of a set of tuples of scalars:
                                    :find   [?eid]
                                    :where  {:db/id ?eid :person/name ?name :location ?loc} )
                   (catch Exception ex (.toString ex)))
-      multi     (try ; error - tuple [?eid ?name] is not scalar
+      multi     (try ; error - result tuple [?eid ?name] is not scalar
                   (td/find-value   :let    [$    (live-db)
                                             ?loc "Caribbean"]
                                    :find   [?eid ?name]
@@ -402,12 +417,13 @@ Lots more to come!
 
 == License
 
-Copyright © 2015 Alan Thompson. 
+Copyright © 2015-2016  Alan Thompson
 
 Distributed under the Eclipse Public License, the same as Clojure.
 
 ==== ToDo List (#todo)
 
+  Add example linking entities
   Add docs for new-attribute optional specs (& default values)
   Seattle tutorial using Tupelo Datomic
   MBrainz tutorial using Tupelo Datomic

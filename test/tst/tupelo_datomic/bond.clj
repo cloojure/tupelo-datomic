@@ -1,11 +1,10 @@
 (ns tst.tupelo-datomic.bond
   (:require [tupelo-datomic.core  :as td]
             [tupelo.schema        :as ts]
-            [tupelo.core          :refer [spy spyx spyxx it-> safe-> grab matches? wild-match? forv submap? only ]]
             [datomic.api          :as d]
             [schema.core          :as s]
   )
-  (:use clojure.test)
+  (:use tupelo.core, clojure.test)
   (:gen-class))
 
 (spyx *clojure-version*)
@@ -41,7 +40,7 @@
   [db-val :- s/Any]
   (let [eids  (td/find-attr   :let    [$ db-val]
                               :find   [?eid]  ; <- could also use Datomic Pull API
-                              :where  {:db/id ?eid :person/name _} ) ]  ; #todo allow :* wildcard???
+                              :where  {:db/id ?eid :person/name _} ) ]
     (set  (for [eid eids]
             (td/entity-map db-val eid)))))
 
@@ -158,7 +157,7 @@
   ; tuples in the result will be discarded.
   (let [tuple-set   (td/find   :let    [$ (live-db)]
                                :find   [?name ?loc] ; <- shape of output tuples
-                               :where  {:person/name ?name :location ?loc} )  ; #todo alias ?* as wildcard???
+                               :where  {:person/name ?name :location ?loc} )
   ]
     (s/validate  ts/TupleSet  tuple-set)       ; verify expected type using Prismatic Schema
     (s/validate #{ [s/Any] }  tuple-set)       ; literal definition of TupleSet
@@ -217,6 +216,8 @@
     (is (= beachy "Dr No"))                       ; found 1 match as expected
     (is (re-find #"Exception" busy))   ; Exception thrown/caught since 2 people in London
     (is (re-find #"Exception" multi))) ; Exception thrown/caught since 2-vector is not scalar
+
+; #todo Add example linking entities (& README)
 
 ; #todo
 ;;  ; If you wish to retain duplicate results on output, you must use td/query-pull and the Datomic

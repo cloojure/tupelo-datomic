@@ -381,7 +381,7 @@
         ~@let-srcs)))
 
 ; #todo: rename :find -> :select or :return or :result ???
-(defmacro query
+(defmacro ^:deprecated query
   "Returns query results as a set of tuples (i.e. a TupleSet, or #{ [s/Any] } in Prismatic Schema),
    where each tuple is unique. Usage:
 
@@ -400,7 +400,7 @@
   `(set (for [tuple# (query-base ~@args) ]
           (vec tuple#))))
 
-(defmacro query-attr
+(defmacro ^:deprecated query-attr
  "Returns a set of unique attribute values (i.e. #{s/Any}). Any duplicate values will be
   discarded. Usage:
 
@@ -414,7 +414,7 @@
   `(set (map only (query-base ~@args))))  ; return 1 attribute value from each entity
 
 ; #todo allow ":find [:*]" to return entire entity map like "select * from" in sql
-(defmacro query-entity
+(defmacro ^:deprecated query-entity
  "Returns a result tuple for a single entity (i.e. [s/Any]). Usage:
 
     (td/query-entity :let    [$ (d/db *conn*)]
@@ -426,7 +426,7 @@
   [& args]
   `(vec (only (query-base ~@args)))) ; return exactly 1 entity
 
-(defmacro query-value
+(defmacro ^:deprecated query-value
  "Returns the value of a single attribute for a single entity.  Usage:
 
     (td/query-value :let    [$      (d/db *conn*)
@@ -445,7 +445,7 @@
         find-vec    (flatten [ (grab :find args-map) ] ) ]
     (any? #(= 'pull %) find-vec)))
 
-(defmacro query-pull
+(defmacro ^:deprecated query-pull
  "Returns a TupleList [Tuple] of query results, where items may be duplicated. Intended only for
   use with the Datomic Pull API. Usage:
 

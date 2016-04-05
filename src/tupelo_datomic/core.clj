@@ -272,6 +272,9 @@
   "Base macro for improved API syntax for datomic.api/q query function (Entity API)"
   [& args]
   ; (newline) (println "find-base =>" args)
+  (when-not (= :where (nth args 4))
+    (throw (IllegalArgumentException. 
+      (str "find-base: 5th arg must be :where, received=" args))))
   (let [let-find-map      (apply hash-map (take 4 args))                ; _ (spyx let-find-map)
         where-entries     (find-where (drop 5 args))                    ; _ (spyx where-entries)
         args-map          (glue let-find-map {:where where-entries} )   ; _ (spyx args-map)
@@ -445,6 +448,22 @@
         find-vec    (flatten [ (grab :find args-map) ] ) ]
     (any? #(= 'pull %) find-vec)))
 
+(defmacro find-pull
+ "Returns a TupleList [Tuple] of query results, where items may be duplicated. Intended only for
+  use with the Datomic Pull API. Usage:
+
+    (td/find-pull   :let    [$ (d/db *conn*) ]
+                    :find   [ (pull ?eid [:location]) ]
+                    :where  { :db/td ?eid :location ?loc } )
+
+  It is an error if the :find clause does not contain a Datomic Pull API request.  "
+  [& args]
+  (when-not (tupelo-datomic.core/contains-pull? args)
+    (throw (IllegalArgumentException. 
+             (str "query-pull: Only intended for queries using the Datomic Pull API"))))
+  `(forv [tuple# (find-base ~@args) ]
+      (vec tuple#)))
+
 (defmacro ^:deprecated query-pull
  "Returns a TupleList [Tuple] of query results, where items may be duplicated. Intended only for
   use with the Datomic Pull API. Usage:
@@ -475,6 +494,7 @@
                                                   :where [[?e :person/name ?name]] } )
                                          (src 1) val-2))))
 
+;------------------------------------------------------------------------------------------------------------------
 ;---------------------------------------------------------------------------------------------------
 ; Informational functions
 

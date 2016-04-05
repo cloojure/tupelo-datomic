@@ -217,6 +217,23 @@
     (is (re-find #"Exception" busy))   ; Exception thrown/caught since 2 people in London
     (is (re-find #"Exception" multi))) ; Exception thrown/caught since 2-vector is not scalar
 
+; #todo make ?*   a synonym for _ wildcard (?)
+; #todo make :eid a synonym for #db/id key (?)
+
+  ; If you wish to retain duplicate results on output, you must use td/find-pull and the Datomic
+  ; Pull API to return a list of results (instead of a set).
+  (let [result-pull     (td/find-pull   :let    [$ (live-db)]                 ; $ is the implicit db name
+                                        :find   [ (pull ?eid [:location]) ]   ; output :location for each ?eid found
+                                        :where  { :db/id ?eid :location _ } )        ; find any ?eid with a :location attr
+        result-sort     (sort-by #(-> % only :location) result-pull)
+  ]
+    (s/validate [ts/TupleMap]   result-pull)  ; a list of tuples of maps
+    (s/validate  ts/TupleMaps   result-pull)  ; a list of tuples of maps
+    (is (= result-sort  [ [ {:location "Caribbean"} ] 
+                          [ {:location "London"   } ]
+                          [ {:location "London"   } ] ] )))
+; #todo show Exception if non-pull
+
 ; #todo Add example linking entities (& README)
 
 ; #todo

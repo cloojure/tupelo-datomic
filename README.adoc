@@ -423,11 +423,11 @@ Distributed under the Eclipse Public License, the same as Clojure.
 
 ==== ToDo List (#todo)
 
-  Add example linking entities
-  Add docs for new-attribute optional specs (& default values)
-  Seattle tutorial using Tupelo Datomic
-  MBrainz tutorial using Tupelo Datomic
-  General Datamoic tutorial using Tupelo
+  - Add example linking entities
+  - Add docs for new-attribute optional specs (& default values)
+  - Seattle tutorial using Tupelo Datomic
+  - MBrainz tutorial using Tupelo Datomic
+  - General Datamoic tutorial using Tupelo
     - including details & gotchas
-  Data import semantics
+  - Data import semantics
 

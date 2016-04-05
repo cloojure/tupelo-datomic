@@ -213,7 +213,7 @@ the addition of `:there.is/no-such-kw` would have succeeded, since it is a legal
 
 == Query Functions in Tupelo Datomic
 
-When querying for values using Tupelo Datomic, the fundamental result type is a
+When searching for values with Tupelo Datomic, the fundamental result type is a
 TupleSet (a Clojure set containing unique Clojure vectors).  This overcomes a
 possible problem with the native Datomic return type of datomic.query.EntityMap,
 which is lazy-loading and may appear to be missing data (unless forced).  Here
@@ -267,7 +267,7 @@ than a set of tuples of scalars:
 [source,clojure]
 ----
 ; If you want just a single attribute as output, you can get a set of values (rather than a set of
-; tuples) using td/query-attr.  As usual, any duplicate values will be discarded.
+; tuples) using td/find-attr.  As usual, any duplicate values will be discarded.
 (let [names     (td/find-attr  :let     [$ (live-db)]
                                :find   [?name] ; <- a single attr-val output allows use of td/find-attr
                                :where  {:person/name ?name} )
@@ -281,7 +281,7 @@ than a set of tuples of scalars:
 
 A parallel case is when we want results for just a single entity, but multiple values are needed.
 In this case, we don't need to wrap the resulting tuple in a set and we can use the function
-`td/query-entity`, which returns just a single tuple as output rather than a set of tuples:
+`td/find-entity`, which returns just a single tuple as output rather than a set of tuples:
 
 [source,clojure]
 ----
@@ -311,7 +311,7 @@ selected, its values for the attributes `:db/id` and `:location` are bound to th
 processing happens for the second call to `find-entity` when `?loc` is bound to the string "London".
 
 Of course, in some instances you may only want the value of a single attribute for a single
-entity.  In this case, we may use the function `td/query-value`, which returns a single scalar
+entity.  In this case, we may use the function `td/find-value`, which returns a single scalar
 result instead of a set of tuples of scalars:
 
 [source,clojure]
@@ -342,18 +342,16 @@ result instead of a set of tuples of scalars:
 
 === Using the Datomic Pull API
 
-#TODO:  This is migrating to `find-pull` soon
-
 If one wishes to use queries returning possibly duplicate result items, then the Datomic Pull API is
-required.  A Pull query returns results in a List (a Clojure vector), rather than a Set, so that
-duplicate result items are not discarded.  As an example, let's find the location of all of our
-entities:
+required.  Searching for data via `find-pull` returns results in a List (a Clojure vector), rather
+than a Set, so that duplicate result items are not discarded.  As an example, let's find the
+location of all of our entities:
 
 [source,clojure]
 ----
-; If you wish to retain duplicate results on output, you must use td/query-pull and the Datomic
+; If you wish to retain duplicate results on output, you must use td/find-pull and the Datomic
 ; Pull API to return a list of results (instead of a set).
-(let [result-pull     (td/query-pull  :let    [$ (live-db)]                 ; $ is the implicit db name
+(let [result-pull     (td/find-pull   :let    [$ (live-db)]                 ; $ is the implicit db name
                                       :find   [ (pull ?eid [:location]) ]   ; output :location for each ?eid found
                                       :where  [ [?eid :location] ] )        ; find any ?eid with a :location attr
       result-sort     (sort-by #(-> % first :location) result-pull)

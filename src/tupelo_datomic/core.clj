@@ -254,7 +254,7 @@
 ;---------------------------------------------------------------------------------------------------
 ; Find
 
-; Process the ":where" clause in the find query
+; Process the ":where" clause in the find-base macro
 (s/defn ^:no-doc find-where :- ts/TupleList
   [maps :- ts/MapList]
   (apply glue
@@ -299,7 +299,7 @@
 
 ; #todo: rename :find -> :select or :return or :result ???
 (defmacro find
-  "Returns query results as a set of tuples (i.e. a TupleSet, or #{ [s/Any] } in Prismatic Schema),
+  "Returns search results as a set of tuples (i.e. a TupleSet, or #{ [s/Any] } in Prismatic Schema),
    where each tuple is unique. Usage:
 
     (td/find  :let    [$        (d/db *conn*)     ; assign multiple variables just like
@@ -480,6 +480,7 @@
   `(forv [tuple# (query-base ~@args) ]
       (vec tuple#)))
 
+; #todo: convert to t-find
 ; #todo: write blog post/forum letter about this testing technique
 (defn t-query
   "Test the query macro, returns true on success."

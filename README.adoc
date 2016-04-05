@@ -301,13 +301,14 @@ In this case, we don't need to wrap the resulting tuple in a set and we can use 
   (is (matches? [_ "Dr No"] beachy ))           ; found 1 match as expected
   (is (re-find #"Exception" busy)))  ; Exception thrown/caught since 2 people in London
 ----
-Note that, in both of the calls to `find-entity`, the symbol `?loc` is bound to the string "Caribbean",
-while the symbols `?eid` and `?name` are left free. This means the query map in the `:where` clause
-will match any entity that posseses all three attributes `:db/id`, `:location`, and `:person/name`
-(note that every entity has the `:db/id` attribute by definition).  In addition, only entities 
-whose `:location` attribute has the value "Caribbean" will be selected. Once an entity is selected,
-its values for the attributes `:db/id` and `:location` are bound to the symbols `?eid` and `?name`, 
-respectively, and the output tuple `[?eid ?name]` is added to the result set.
+Note that, in the first the call to `find-entity`, the symbol `?loc` is bound to the string
+"Caribbean", while the symbols `?eid` and `?name` are left free. This means the query map in the
+`:where` clause will match any entity that posseses all three attributes `:db/id`, `:location`, and
+`:person/name` (note that every entity has the `:db/id` attribute by definition).  In addition, only
+entities whose `:location` attribute has the value "Caribbean" will be selected.  Once an entity is
+selected, its values for the attributes `:db/id` and `:location` are bound to the symbols `?eid` and
+`?name`, respectively, and the output tuple `[?eid ?name]` is added to the result set. Similar
+processing happens for the second call to `find-entity` when `?loc` is bound to the string "London".
 
 Of course, in some instances you may only want the value of a single attribute for a single
 entity.  In this case, we may use the function `td/query-value`, which returns a single scalar

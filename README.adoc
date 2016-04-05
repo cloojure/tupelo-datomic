@@ -423,13 +423,14 @@ Distributed under the Eclipse Public License, the same as Clojure.
 
 ==== ToDo List (#todo)
 
-  Add example linking entities
-  Add docs for new-attribute optional specs (& default values)
-  Seattle tutorial using Tupelo Datomic
-  MBrainz tutorial using Tupelo Datomic
-  General Datamoic tutorial using Tupelo
+  add comparison from conj 2015 talk
+  add example linking entities
+  add docs for new-attribute optional specs (& default values)
+  seattle tutorial using tupelo datomic
+  mbrainz tutorial using tupelo datomic
+  general datamoic tutorial using tupelo
     including details & gotchas
-  Data import semantics
+  data import semantics
   maybe rename td/transact -> td/transact! or td/tx!
   think about copying semantics from atoms (swap! reset! etc)
 

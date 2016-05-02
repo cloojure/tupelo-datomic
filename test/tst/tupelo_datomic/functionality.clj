@@ -66,7 +66,6 @@
                     (td/new-attribute   :person.name :db.type/long)) ]
     ; (newline) (spyx (class result))
     ; (newline) (spyx result)
-    ; (newline) (spyx (.toString result))
     (is (re-find #":db.error/invalid-install-attribute" (.toString result))))
 
   (td/transact *conn* 

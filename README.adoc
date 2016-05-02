@@ -432,4 +432,7 @@ Distributed under the Eclipse Public License, the same as Clojure.
   data import semantics
   maybe rename td/transact -> td/transact! or td/tx!
   think about copying semantics from atoms (swap! reset! etc)
+  rename new-attribute -> create-attribute, etc:   new-*  ->  create-*
+  test/document if re-create a given attr, enum, partition etc. Also, does it matter if do same
+    thing twice or 2nd one is different
 

@@ -4,8 +4,7 @@ a few attributes that will apply to our heroes & villains
 
 [source,clojure]
 ----
-(td/transact *conn* ;   required              required              zero-or-more
-                    ;  <attr name>         <attr value type>       <optional specs ...>
+(td/transact *conn* ;  <name>               <type>                  <options>
   (td/new-attribute   :person/name         :db.type/string         :db.unique/value)
   (td/new-attribute   :person/secret-id    :db.type/long           :db.unique/value)
   (td/new-attribute   :weapon/type         :db.type/ref            :db.cardinality/many)
@@ -28,9 +27,12 @@ number of choices available to our antagonists:
 [source,clojure]
 ----
 (td/transact *conn* 
-  (td/new-entity { :person/name "James Bond" :location "London"     :weapon/type #{ :weapon/gun :weapon/wit   } } )
-  (td/new-entity { :person/name "M"          :location "London"     :weapon/type #{ :weapon/gun :weapon/guile } } )
-  (td/new-entity { :person/name "Dr No"      :location "Caribbean"  :weapon/type    :weapon/gun                 } ))
+  (td/new-entity { :person/name "James Bond" 
+                        :location "London"     :weapon/type #{ :weapon/gun :weapon/wit   } } )
+  (td/new-entity { :person/name "M"          
+                        :location "London"     :weapon/type #{ :weapon/gun :weapon/guile } } )
+  (td/new-entity { :person/name "Dr No"      
+                        :location "Caribbean"  :weapon/type    :weapon/gun                 } ))
 ----
 
 And, just like that, we have values persisted in the DB! Let's check that they are really there:
@@ -39,9 +41,12 @@ And, just like that, we have values persisted in the DB! Let's check that they a
 ----
 (let [people (get-people (live-db)) ]
   (is (= people   
-         #{ {:person/name "James Bond"    :location "London"      :weapon/type #{:weapon/wit    :weapon/gun} }
-            {:person/name "M"             :location "London"      :weapon/type #{:weapon/guile  :weapon/gun} }
-            {:person/name "Dr No"         :location "Caribbean"   :weapon/type #{:weapon/gun               } } } )))
+         #{ {:person/name "James Bond"    
+                    :location "London"      :weapon/type #{:weapon/wit    :weapon/gun} }
+            {:person/name "M"             
+                    :location "London"      :weapon/type #{:weapon/guile  :weapon/gun} }
+            {:person/name "Dr No"         
+                    :location "Caribbean"   :weapon/type #{:weapon/gun               } } } )))
 ----
 
 == EntitySpec, EntityID, and LookupRef
@@ -51,7 +56,7 @@ of EntitySpec:
 
 [source,clojure]
 ----
-(let [james-eid   (td/find-value   :let    [$ (live-db)]     ; like Clojure let
+(let [james-eid   (td/find-value   :let    [$ (live-db)]
                                    :find   [?eid]
                                    :where  {:db/id ?eid :person/name "James Bond"} )
       james-map   (td/entity-map (live-db) james-eid)                       ; lookup by EID  
@@ -66,11 +71,11 @@ We can also use either type of EntitySpec for update.
 [source,clojure]
 ----
   (td/transact *conn* 
-    (td/update james-eid   ; update using EID
-        { :weapon/type #{ :weapon/knife }
-          :person/secret-id 007 } )
+    (td/update james-eid                ; update using EID
+        { :weapon/type        #{ :weapon/knife }
+          :person/secret-id   007 } )
 
-    (td/update [:person/name "Dr No"] ; update using LookupRef
+    (td/update [:person/name "Dr No"]   ; update using LookupRef
       { :weapon/type #{ :weapon/knife :weapon/guile } } )))
 ----
 
@@ -78,12 +83,14 @@ As expected, our database contains the updated values for Dr No and James Bond.
 
 [source,clojure]
 ----
-; Verify current status. Notice there are no duplicate weapons.
 (let [people (get-people (live-db)) ]
   (is (= people   
-    #{ { :person/name "James Bond" :location "London" :weapon/type #{:weapon/wit :weapon/knife :weapon/gun} :person/secret-id 7 }
-       { :person/name "M" :location "London"          :weapon/type #{:weapon/guile :weapon/gun} }
-       { :person/name "Dr No" :location "Caribbean"   :weapon/type #{:weapon/guile :weapon/knife :weapon/gun} } } )))
+    #{ { :person/name "James Bond"  :location "London" 
+                :weapon/type #{:weapon/wit :weapon/knife :weapon/gun}     :person/secret-id 7 }
+       { :person/name "M"           :location "London"          
+                :weapon/type #{:weapon/guile :weapon/gun} }
+       { :person/name "Dr No"       :location "Caribbean"   
+                :weapon/type #{:weapon/guile :weapon/knife :weapon/gun} } } )))
 ----
 
 Note that James Bond is the only person with an entry for `:person/secret-id`.

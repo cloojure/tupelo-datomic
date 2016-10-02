@@ -447,6 +447,25 @@ function.  Using the example for Honey Rider above,
   )
 ----
 
+Other informational functions
+(please see link:http://cloojure.github.io/doc/tupelo-datomic/tupelo-datomic.core.html[the
+Tupelo-Datomic API docs] for details).
+
+[source,clojure]
+----
+(is-transaction?  db-val entity-spec)
+  "Returns true if an entity is a transaction (i.e. it is in the :db.part/tx partition)"
+
+(transactions db-val)
+  "Returns a lazy sequence of entity-maps for all DB transactions"
+
+(eids tx-result)
+  "Returns a collection of the EIDs created in a transaction."
+
+(txid tx-result)
+  "Returns the EID of a transaction"
+----
+
 == Future Work
 
 Lots more to come!

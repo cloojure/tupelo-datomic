@@ -303,6 +303,7 @@
     (is (= "Caribbean"   (:v (only (keep-if #(= :location     (:a %)) tx-datoms)))))
     (is (= 1                (count (keep-if #(= :weapon/type  (:a %)) tx-datoms))))
     (is (= 1                (count (keep-if #(= :db/txInstant (:a %)) tx-datoms))))
+    (is (apply = (map :tx tx-datoms)))  ; All datoms have the same :tx value
   )
 
 ; #todo verify that datomic/q returns TupleSets (i.e. no duplicate tuples in result)

@@ -562,7 +562,7 @@
   (for [datom (apply d/datoms db-val index components) ]
     (datom-map datom)))
 
-; #todo - need test
+; #todo - README
 (s/defn tx-datoms :- s/Any
   "Returns a vector of datom-maps from a TxResult"
   [db-val     :- datomic.db.Db

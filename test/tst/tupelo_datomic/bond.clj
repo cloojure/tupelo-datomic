@@ -1,8 +1,10 @@
 (ns tst.tupelo-datomic.bond
-  (:require [tupelo-datomic.core  :as td]
-            [tupelo.schema        :as ts]
-            [datomic.api          :as d]
-            [schema.core          :as s]
+  (:require 
+    [clojure.pprint       :refer [pprint]]
+    [datomic.api          :as d]
+    [schema.core          :as s]
+    [tupelo-datomic.core  :as td]
+    [tupelo.schema        :as ts]
   )
   (:use tupelo.core, clojure.test)
   (:gen-class))
@@ -261,6 +263,7 @@
                           { :person/name "Honey Rider" :location "Caribbean" :weapon/type #{:weapon/knife} } ))
         [honey-eid]  (td/eids tx-result)          ; retrieve Honey Rider's EID from the seq (destructuring)
          honey-eid2  (only (td/eids tx-result))   ;   or use 'only' to unwrap it
+        tx-datoms   (td/tx-datoms (live-db) tx-result)
   ]
     (s/validate ts/Eid honey-eid)  ; verify the expected type
     (is (= honey-eid honey-eid2))
@@ -271,7 +274,36 @@
     (let [people-eids           (td/partition-eids (live-db) :people)
           people-entity-maps    (mapv  #(td/entity-map (live-db) %)  people-eids) ]
       (is (= (only people-entity-maps)
-             {:person/name "Honey Rider", :weapon/type #{:weapon/knife}, :location "Caribbean"} ))))
+             {:person/name "Honey Rider", :weapon/type #{:weapon/knife}, :location "Caribbean"} )))
+
+
+    ; (print "Honey tx-datoms =") (pprint tx-datoms)
+    ; tx-datoms looks like:
+    ;    [ {:e 13194139534328,
+    ;       :a :db/txInstant,
+    ;       :v #inst "2016-10-02T21:45:44.689-00:00",
+    ;       :tx 13194139534328,
+    ;       :added true}
+    ;      {:e 299067162756089,
+    ;       :a :person/name,
+    ;       :v "Honey Rider",
+    ;       :tx 13194139534328,
+    ;       :added true}
+    ;      {:e 299067162756089,
+    ;       :a :location,
+    ;       :v "Caribbean",
+    ;       :tx 13194139534328,
+    ;       :added true}
+    ;      {:e 299067162756089,
+    ;       :a :weapon/type,
+    ;       :v 17592186045419,
+    ;       :tx 13194139534328,
+    ;       :added true} ]
+    (is (= "Honey Rider" (:v (only (keep-if #(= :person/name  (:a %)) tx-datoms)))))
+    (is (= "Caribbean"   (:v (only (keep-if #(= :location     (:a %)) tx-datoms)))))
+    (is (= 1                (count (keep-if #(= :weapon/type  (:a %)) tx-datoms))))
+    (is (= 1                (count (keep-if #(= :db/txInstant (:a %)) tx-datoms))))
+  )
 
 ; #todo verify that datomic/q returns TupleSets (i.e. no duplicate tuples in result)
 )

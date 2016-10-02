@@ -1,0 +1,175 @@
+
+Suppose we're trying to keep track of information for the world's premiere spy agency. Let's create
+a few attributes that will apply to our heroes & villains
+
+[source,clojure]
+----
+(td/transact *conn* ;  <name>               <type>                  <options>
+  (td/new-attribute   :person/name         :db.type/string         :db.unique/value)
+  (td/new-attribute   :person/secret-id    :db.type/long           :db.unique/value)
+  (td/new-attribute   :weapon/type         :db.type/ref            :db.cardinality/many)
+  (td/new-attribute   :location            :db.type/string)
+  (td/new-attribute   :favorite-weapon     :db.type/keyword ))
+----
+
+For the `:weapon/type` attribute, we want to use an enumerated type since there are only a limited
+number of choices available to our antagonists:
+
+[source,clojure]
+----
+(td/transact *conn* 
+  (td/new-enum :weapon/gun)
+  (td/new-enum :weapon/knife)
+  (td/new-enum :weapon/guile)
+  (td/new-enum :weapon/wit))
+----
+
+[source,clojure]
+----
+(td/transact *conn* 
+  (td/new-entity { :person/name "James Bond" 
+                        :location "London"     :weapon/type #{ :weapon/gun :weapon/wit   } } )
+  (td/new-entity { :person/name "M"          
+                        :location "London"     :weapon/type #{ :weapon/gun :weapon/guile } } )
+  (td/new-entity { :person/name "Dr No"      
+                        :location "Caribbean"  :weapon/type    :weapon/gun                 } ))
+----
+
+And, just like that, we have values persisted in the DB! Let's check that they are really there:
+
+[source,clojure]
+----
+(let [people (get-people (live-db)) ]
+  (is (= people   
+         #{ {:person/name "James Bond"    
+                    :location "London"      :weapon/type #{:weapon/wit    :weapon/gun} }
+            {:person/name "M"             
+                    :location "London"      :weapon/type #{:weapon/guile  :weapon/gun} }
+            {:person/name "Dr No"         
+                    :location "Caribbean"   :weapon/type #{:weapon/gun               } } } )))
+----
+
+== EntitySpec, EntityID, and LookupRef
+
+Here we verify that we can find James Bond and retrieve all of his attr-val pairs using either type
+of EntitySpec:
+
+[source,clojure]
+----
+(let [james-eid   (td/find-value   :let    [$ (live-db)]
+                                   :find   [?eid]
+                                   :where  {:db/id ?eid :person/name "James Bond"} )
+      james-map   (td/entity-map (live-db) james-eid)                       ; lookup by EID  
+      james-map2  (td/entity-map (live-db) [:person/name "James Bond"] )    ; lookup by LookupRef
+]
+  (is (= james-map james-map2 
+         {:person/name "James Bond" :location "London" :weapon/type #{:weapon/wit :weapon/gun} } ))
+----
+
+We can also use either type of EntitySpec for update.
+
+[source,clojure]
+----
+  (td/transact *conn* 
+    (td/update james-eid                ; update using EID
+        { :weapon/type        #{ :weapon/knife }
+          :person/secret-id   007 } )
+
+    (td/update [:person/name "Dr No"]   ; update using LookupRef
+      { :weapon/type #{ :weapon/knife :weapon/guile } } )))
+----
+
+As expected, our database contains the updated values for Dr No and James Bond. 
+
+[source,clojure]
+----
+(let [people (get-people (live-db)) ]
+  (is (= people   
+    #{ { :person/name "James Bond"  :location "London" 
+                :weapon/type #{:weapon/wit :weapon/knife :weapon/gun}     :person/secret-id 7 }
+       { :person/name "M"           :location "London"          
+                :weapon/type #{:weapon/guile :weapon/gun} }
+       { :person/name "Dr No"       :location "Caribbean"   
+                :weapon/type #{:weapon/guile :weapon/knife :weapon/gun} } } )))
+----
+
+Note that James Bond is the only person with an entry for `:person/secret-id`.
+
+==== The Datomic Conceptual Model:
+
+[big]#*_Datomic is conceptually structured as a collection of simple maps, each of which has a
+unique Entity ID and an arbitrary collection of attribute-value pairs._*#
+
+[source,clojure]
+----
+[
+;  <----------------- Maps of Attribute-Value Pairs ----------------------------------------->
+   { :db/id 1001  :person/name "James Bond"  :location "London"     ...  :person/secret-id 7 }
+   { :db/id 1002  :person/name "M"           :location "London"     ...                      }
+   { :db/id 1003  :person/name "Dr No"       :location "Caribbean"  ...                      }
+]
+----
+
+== Query Functions in Tupelo Datomic
+
+[source,clojure]
+----
+(let [tuple-set (td/find :let   [$ (live-db)]
+                         :find  [?name ?loc] ; <- shape of output tuples
+                         :where {:person/name ?name :location ?loc} )
+]
+  (is (= tuple-set #{ ["Dr No"       "Caribbean"]
+                      ["James Bond"  "London"]  
+                      ["M"           "London"] } )))   
+----
+
+The above query matches any entity that has both a `:person/name` and a `:location` attribute. For
+each matching entity, the two values corresponding to `:person/name` and `:location` will be bound
+to the `?name` and `?loc` symbols, respectively, which are used to generate an output tuple of the
+shape `[?name ?loc]`. Each output tuple is added to the result set, which is returned to the caller.
+Since the returned value is a normal Clojure set, duplicate elements are not allowed and any
+non-unique values will be discarded.
+
+Receiving a TupleSet result is the most general case, but in many instances we
+can save some effort.  If we are retrieving the value for a single attribute per
+entity, we don't need to wrap that result in a tuple. In this case, we can use
+the function `td/find-attr`, which returns a set of scalars as output rather
+than a set of tuples of scalars:
+
+[source,clojure]
+----
+(let [names     (td/find-attr  :let     [$ (live-db)]
+                               :find   [?name]
+                               :where  {:person/name ?name} )
+      cities    (td/find-attr  :let     [$ (live-db)]
+                               :find   [?loc]
+                               :where  {:location ?loc} )
+]
+  (is (= names    #{"Dr No" "James Bond" "M"} ))
+  (is (= cities   #{"Caribbean" "London"} )))
+----
+
+A parallel case is when we want results for just a single entity, but multiple values are needed.
+In this case, we don't need to wrap the resulting tuple in a set and we can use the function
+`td/find-entity`, which returns just a single tuple as output rather than a set of tuples:
+
+[source,clojure]
+----
+(let [beachy    (td/find-entity    :let    [$    (live-db)
+                                            ?loc "Caribbean"]
+                                   :find   [?eid ?name]
+                                   :where  {:db/id ?eid :person/name ?name :location ?loc} )
+]
+  (is (matches? [_ "Dr No"] beachy ))
+----
+
+[source,clojure]
+----
+(let [beachy    (td/find-value   :let    [$    (live-db)
+                                          ?loc "Caribbean"]
+                                 :find   [?name]
+                                 :where  {:person/name ?name :location ?loc} )
+]
+  (is (= beachy "Dr No"))
+----
+

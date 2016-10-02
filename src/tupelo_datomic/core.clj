@@ -185,6 +185,8 @@
       attr-val-map    :- ts/KeyMap ]
     (glue {:db/id (d/tempid -partition) } attr-val-map)))
 
+; #todo pair create-enum (rename) & create-or-verify-enum (idempotent)
+;         declarative: describes desired end state, not how to get there
 ; #todo need test
 (s/defn new-enum :- ts/KeyMap   ; #todo add namespace version
  "Returns the tx-data to create a new enumeration entity in the DB. Usage:

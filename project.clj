@@ -1,5 +1,5 @@
 (defproject tupelo-datomic "0.1.68"
-  :description "Tupelo Datomic:  Making Datomic Even Sweeter"
+  :description "Tupelo Datomic:  Datomic With A Spoonful of Honey"
   :url "http://github.com/cloojure/tupelo-datomic"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}

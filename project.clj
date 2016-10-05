@@ -1,25 +1,21 @@
-(defproject tupelo-datomic "0.1.68"
+(defproject tupelo-datomic "0.9.1"
   :description "Tupelo Datomic:  Datomic With A Spoonful of Honey"
   :url "http://github.com/cloojure/tupelo-datomic"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [ [tupelo                           "0.1.67"]
-                  [org.clojure/clojure              "1.7.0"]
-                  [org.clojure/core.incubator       "0.1.3"]
-                  [org.clojure/test.check           "0.5.9"]
-                  [org.clojure/core.match           "0.3.0-alpha4"]
-                  [clj-time                         "0.7.0"]
-                  [criterium                        "0.4.3"]
-                  [cheshire                         "5.5.0"]
-                  [prismatic/schema                 "1.0.4"]
-                  [com.datomic/datomic-pro          "0.9.5350" :exclusions [joda-time]]
-                ]
+  :dependencies [
+    [com.datomic/datomic-pro          "0.9.5350" :exclusions [joda-time]]
+    [org.clojure/clojure              "1.9.0-alpha13"]
+    [org.clojure/core.match           "0.3.0-alpha4"]
+    [prismatic/schema                 "1.0.4"]
+    [tupelo                           "0.1.67"]
+  ]
   :plugins  [ [codox "0.8.10"] ]
   :codox {:src-dir-uri "http://github.com/cloojure/tupelo-datomic/blob/master/"
           :src-linenum-anchor-prefix "L"}
   :deploy-repositories {  "snapshots" :clojars
                           "releases"  :clojars }
-  :update :always; :daily  
+  :update :daily ;  :always 
   :main ^:skip-aot tupelo-datomic.core
   :target-path "target/%s"
   :clean-targets [ "target" ]

@@ -564,7 +564,7 @@
   (for [datom (apply d/datoms db-val index components) ]
     (datom-map datom)))
 
-; #todo - need test
+; #todo - README
 (s/defn tx-datoms :- s/Any
   "Returns a vector of datom-maps from a TxResult"
   [db-val     :- datomic.db.Db
@@ -580,6 +580,12 @@
         tx-datoms    (mapv fn-datom tx-data)
     ]
       tx-datoms))
+; #todo:  map :v using eid->ident if attribute (:a) is a "enum ref" like :weapon/type
+;    { :e 299067162756089,
+;      :a :weapon/type,
+;      :v 17592186045419,
+;      :tx 13194139534328,
+;      :added true }
 
 ; #todo - need test
 (s/defn partition-name :- s/Keyword

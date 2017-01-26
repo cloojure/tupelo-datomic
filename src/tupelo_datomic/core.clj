@@ -299,6 +299,7 @@
              :in     [ ~@let-syms ] }
            ~@let-srcs)))
 
+; #todo maybe change qurey :find -> :return  ?
 ; #todo: rename :find -> :select or :return or :result ???
 (defmacro find
   "Returns search results as a set of tuples (i.e. a TupleSet, or #{ [s/Any] } in Prismatic Schema),

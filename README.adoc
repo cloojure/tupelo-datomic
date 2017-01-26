@@ -483,6 +483,7 @@ Distributed under the Eclipse Public License, the same as Clojure.
 
 ==== ToDo List (#todo)
 
+  add example for (d/entity-db ...)
   add comparison from conj 2015 talk
   add example linking entities
   add docs for new-attribute optional specs (& default values)

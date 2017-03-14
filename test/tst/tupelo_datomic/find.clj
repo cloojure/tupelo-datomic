@@ -1,10 +1,11 @@
 (ns tst.tupelo-datomic.find
-  (:use tupelo.core
-        clojure.test )
+  (:use clojure.test )
+  (:use tupelo.core)
   (:refer-clojure :exclude [clojure.core find] )
   (:require [datomic.api          :as d]
             [tupelo-datomic.core  :as td]
             [tupelo.schema        :as ts]
+            [tupelo.core :as t]
             [schema.core          :as s]))
 
 (spyx *clojure-version*)

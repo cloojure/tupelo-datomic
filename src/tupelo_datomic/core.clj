@@ -3,9 +3,11 @@
   (:require [datomic.api            :as d]
             [tupelo.schema          :as ts]
             [tupelo-datomic.schema  :as tsd]  ; #todo tsd -> tds
-            [schema.core            :as s] )
+            [schema.core            :as s]
+            [tupelo.core :as t]
+            )
   (:use tupelo.core)
-  (:gen-class))
+  )
 
 ;---------------------------------------------------------------------------------------------------
 ; Notes:

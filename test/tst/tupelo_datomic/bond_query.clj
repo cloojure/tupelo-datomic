@@ -1,12 +1,13 @@
 (ns tst.tupelo-datomic.bond-query
   (:require [tupelo-datomic.core  :as td]
             [tupelo.schema        :as ts]
-            [tupelo.core          :refer [spy spyx spyxx it-> safe-> grab matches? wild-match? forv submap? only ]]
             [datomic.api          :as d]
             [schema.core          :as s]
+            [tupelo.core :as t]
   )
   (:use clojure.test)
-  (:gen-class))
+  (:use tupelo.core)
+)
 
 (spyx *clojure-version*)
 (set! *warn-on-reflection* false)

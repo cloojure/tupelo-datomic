@@ -1,13 +1,14 @@
 (ns tst.tupelo-datomic.bond
-  (:require 
+  (:use clojure.test)
+  (:use tupelo.core)
+  (:require
     [clojure.pprint       :refer [pprint]]
     [datomic.api          :as d]
     [schema.core          :as s]
     [tupelo-datomic.core  :as td]
     [tupelo.schema        :as ts]
-  )
-  (:use tupelo.core, clojure.test)
-  (:gen-class))
+    [tupelo.core          :as t]
+  ))
 
 (spyx *clojure-version*)
 (set! *warn-on-reflection* false)
@@ -129,10 +130,10 @@
                                   { :weapon/type #{ :there.is/no-such-kw } } ))))  ; bogus value for :weapon/type causes exception
 
     ; What if James throws his knife at a villan.  We must remove it from the db.
-    (td/transact *conn* 
-      (td/retract-value james-eid :weapon/type :weapon/knife))
-    (is (= (td/entity-map (live-db) james-eid)  ; lookup by EID 
-           {:person/name "James Bond" :location "London" :weapon/type #{:weapon/wit :weapon/gun} :person/secret-id 7 } ))
+    (td/transact *conn*
+      (td/retract-value [:person/name "James Bond"] :weapon/type :weapon/knife))
+    (is (= (td/entity-map (live-db) [:person/name "James Bond"])  ; LookupRef
+          {:person/name "James Bond" :location "London" :weapon/type #{:weapon/wit :weapon/gun} :person/secret-id 7 } ))
 
     ; James is on a secret mission, & no one knows where...
     (td/transact *conn* 
@@ -153,7 +154,8 @@
     ; (td/entity-map-full ...) includes the EID in the result under the native Datomic keyword :db/id
     (is (= (td/entity-map-full (live-db) james-eid)  ; lookup by EID 
            {:person/name "James Bond" :location "London" :weapon/type #{:weapon/wit :weapon/gun} :person/secret-id 7 
-            :db/id james-eid } )))
+            :db/id james-eid } ))
+  )
 
   ; For general queries, use td/find.  It returns a set of tuples (a TupleSet).  Duplicate
   ; tuples in the result will be discarded.
@@ -237,6 +239,7 @@
 ; #todo show Exception if non-pull
 
 ; #todo Add example linking entities (& README)
+; #todo Add example showing history (eg find EIDs of last tx)
 
 ; #todo
 ;;  ; If you wish to retain duplicate results on output, you must use td/query-pull and the Datomic
@@ -306,5 +309,22 @@
     (is (apply = (map :tx tx-datoms)))  ; All datoms have the same :tx value
   )
 
-; #todo verify that datomic/q returns TupleSets (i.e. no duplicate tuples in result)
+  ; Once James has defeated Dr No, we need to remove him (& everything he possesses) from the database.
+  (newline)
+  ; Dr No is in the DB
+  (is (= (get-people (live-db))
+          #{  {:person/name "M", :weapon/type #{:weapon/guile :weapon/gun}, :location "London"}
+              {:person/name "James Bond", :person/secret-id 7, :weapon/type #{:weapon/wit :weapon/gun}, :location "London"}
+              {:person/name "Honey Rider", :weapon/type #{:weapon/knife}, :location "Caribbean"}
+              {:person/name "Dr No", :weapon/type #{:weapon/guile :weapon/knife :weapon/gun}, :location "Caribbean"} } ))
+  (td/transact *conn*
+    (td/retract-entity [:person/name "Dr No"] ))
+  ; ...and now he's not!
+  (is (= (get-people (live-db))
+        #{  {:person/name "M",           :weapon/type #{:weapon/guile :weapon/gun}, :location "London"}
+            {:person/name "James Bond",  :weapon/type #{:weapon/wit :weapon/gun},   :location "London", :person/secret-id 7 }
+            {:person/name "Honey Rider", :weapon/type #{:weapon/knife},             :location "Caribbean"} } ))
+
+
+  ; #todo verify that datomic/q returns TupleSets (i.e. no duplicate tuples in result)
 )

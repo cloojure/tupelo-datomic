@@ -4,14 +4,17 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [
-    [com.datomic/datomic-pro          "0.9.5350" :exclusions [joda-time]]
+    [com.datomic/datomic-pro          "0.9.5359" :exclusions [joda-time]]
     [org.clojure/clojure              "1.8.0"]
-   ;[org.clojure/clojure              "1.9.0-alpha14"]
     [org.clojure/core.match           "0.3.0-alpha4"]
-    [org.clojure/test.check           "0.5.9"]
-    [prismatic/schema                 "1.0.4"]
+    [org.clojure/test.check           "0.9.0"]
+    [prismatic/schema                 "1.1.3"]
     [tupelo                           "0.1.67"]
   ]
+
+  :repositories {"my.datomic.com" {:url "https://my.datomic.com/repo"
+                                   :creds :gpg}}
+
   :plugins  [ [codox "0.8.10"] ]
   :codox {:src-dir-uri "http://github.com/cloojure/tupelo-datomic/blob/master/"
           :src-linenum-anchor-prefix "L"}

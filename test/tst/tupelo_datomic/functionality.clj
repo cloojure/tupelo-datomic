@@ -3,9 +3,10 @@
             [tupelo.schema        :as ts]
             [datomic.api          :as d]
             [schema.core          :as s]
+            [tupelo.core :as t]
   )
-  (:use tupelo.core, clojure.test)
-  (:gen-class))
+  (:use clojure.test tupelo.core)
+  )
 
 (spyx *clojure-version*)
 (set! *warn-on-reflection* false)

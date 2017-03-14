@@ -310,21 +310,24 @@
   )
 
   ; Once James has defeated Dr No, we need to remove him (& everything he possesses) from the database.
-  (newline)
-  ; Dr No is in the DB
-  (is (= (get-people (live-db))
-          #{  {:person/name "M", :weapon/type #{:weapon/guile :weapon/gun}, :location "London"}
-              {:person/name "James Bond", :person/secret-id 7, :weapon/type #{:weapon/wit :weapon/gun}, :location "London"}
-              {:person/name "Honey Rider", :weapon/type #{:weapon/knife}, :location "Caribbean"}
-              {:person/name "Dr No", :weapon/type #{:weapon/guile :weapon/knife :weapon/gun}, :location "Caribbean"} } ))
+  ; We see that Dr No is in the DB...
+  (let [tuple-set   (td/find  :let    [$ (live-db)]
+                              :find   [?name ?loc] ; <- shape of output tuples
+                              :where  {:person/name ?name :location ?loc} ) ]
+    (is (= tuple-set #{ ["James Bond"     "London"]
+                        ["M"              "London"]
+                        ["Dr No"          "Caribbean"]
+                        ["Honey Rider"    "Caribbean"] } )))
+  ; we do the retraction...
   (td/transact *conn*
     (td/retract-entity [:person/name "Dr No"] ))
-  ; ...and now he's not!
-  (is (= (get-people (live-db))
-        #{  {:person/name "M",           :weapon/type #{:weapon/guile :weapon/gun}, :location "London"}
-            {:person/name "James Bond",  :weapon/type #{:weapon/wit :weapon/gun},   :location "London", :person/secret-id 7 }
-            {:person/name "Honey Rider", :weapon/type #{:weapon/knife},             :location "Caribbean"} } ))
-
+  ; ...and now he's gone!
+  (let [tuple-set   (td/find  :let    [$ (live-db)]
+                              :find   [?name ?loc]
+                              :where  {:person/name ?name :location ?loc} ) ]
+    (is (= tuple-set #{ ["James Bond"     "London"]
+                        ["M"              "London"]
+                        ["Honey Rider"    "Caribbean"] } )))
 
   ; #todo verify that datomic/q returns TupleSets (i.e. no duplicate tuples in result)
 )

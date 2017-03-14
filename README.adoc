@@ -370,34 +370,32 @@ Suppose James throws his knife at a villan. We need to remove it from the DB.
 (td/transact *conn* 
   (td/retract-value james-eid :weapon/type :weapon/knife))
 (is (= (td/entity-map (live-db) james-eid)  ; lookup by EID 
-       {:person/name "James Bond" :location "London" :weapon/type #{:weapon/wit :weapon/gun} :person/secret-id 7 } ))----
+       {:person/name "James Bond" :location "London" :weapon/type #{:weapon/wit :weapon/gun} :person/secret-id 7 } ))
 ----
 
 Once James has defeated Dr No, we need to remove him (& everything he possesses) from the database.
 
 [source,clojure]
 ----
-  ; We see that Dr No is in the DB...
-  (let [tuple-set   (td/find  :let    [$ (live-db)]
-                              :find   [?name ?loc] ; <- shape of output tuples
-                              :where  {:person/name ?name :location ?loc} ) ]
-    (is (= tuple-set #{ ["James Bond"     "London"]
-                        ["M"              "London"]
-                        ["Dr No"          "Caribbean"]
-                        ["Honey Rider"    "Caribbean"] } )))
-  ; we do the retraction...
-  (td/transact *conn*
-    (td/retract-entity [:person/name "Dr No"] ))
-  ; ...and now he's gone!
-  (let [tuple-set   (td/find  :let    [$ (live-db)]
-                              :find   [?name ?loc]
-                              :where  {:person/name ?name :location ?loc} ) ]
-    (is (= tuple-set #{ ["James Bond"     "London"]
-                        ["M"              "London"]
-                        ["Honey Rider"    "Caribbean"] } )))----
-
-
-
+; We see that Dr No is in the DB...
+(let [tuple-set   (td/find  :let    [$ (live-db)]
+                            :find   [?name ?loc] ; <- shape of output tuples
+                            :where  {:person/name ?name :location ?loc} ) ]
+  (is (= tuple-set #{ ["James Bond"     "London"]
+                      ["M"              "London"]
+                      ["Dr No"          "Caribbean"]
+                      ["Honey Rider"    "Caribbean"] } )))
+; we do the retraction...
+(td/transact *conn*
+  (td/retract-entity [:person/name "Dr No"] ))
+; ...and now he's gone!
+(let [tuple-set   (td/find  :let    [$ (live-db)]
+                            :find   [?name ?loc]
+                            :where  {:person/name ?name :location ?loc} ) ]
+  (is (= tuple-set #{ ["James Bond"     "London"]
+                      ["M"              "London"]
+                      ["Honey Rider"    "Caribbean"] } )))
+----
 
 == Using Datomic Partitions
 

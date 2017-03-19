@@ -132,8 +132,16 @@
     ; What if James throws his knife at a villan.  We must remove it from the db.
     (td/transact *conn*
       (td/retract-value [:person/name "James Bond"] :weapon/type :weapon/knife))
-    (is (= (td/entity-map (live-db) [:person/name "James Bond"])  ; LookupRef
+    (is (= (td/entity-map (live-db) [:person/name "James Bond"]) ; LookupRef
           {:person/name "James Bond" :location "London" :weapon/type #{:weapon/wit :weapon/gun} :person/secret-id 7 } ))
+
+    ; Dr No is no match for James. He gives up trying to use guile...  Remove it using native Datomic.
+    (td/entity-map (live-db) [:person/name "Dr No"])
+    (d/transact *conn* [
+       [:db/retract [:person/name "Dr No"] :weapon/type :weapon/guile]
+    ] )
+    (is (= (td/entity-map (live-db) [:person/name "Dr No"]) ; LookupRef
+          {:person/name "Dr No" :location "Caribbean" :weapon/type #{:weapon/knife :weapon/gun} } ))
 
     ; James is on a secret mission, & no one knows where...
     (td/transact *conn* 

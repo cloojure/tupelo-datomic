@@ -6,8 +6,8 @@
     [datomic.api          :as d]
     [schema.core          :as s]
     [tupelo-datomic.core  :as td]
-    [tupelo.schema        :as ts]
     [tupelo.core          :as t]
+    [tupelo.schema        :as ts]
   ))
 
 (spyx *clojure-version*)
@@ -336,6 +336,45 @@
     (is (= tuple-set #{ ["James Bond"     "London"]
                         ["M"              "London"]
                         ["Honey Rider"    "Caribbean"] } )))
+
+  (defn get-bond-girl-names []
+    (let [result-pull (d/pull (live-db) [:bond-girl] [:person/name "James Bond"])
+          bond-girl-names (forv [girl-entity (grab :bond-girl result-pull) ]
+                               (grab :person/name (td/entity-map (live-db) (grab :db/id girl-entity))))
+          ]
+      bond-girl-names))
+
+  (td/transact *conn*
+    (td/new-attribute :bond-girl :db.type/ref :db.cardinality/many))  ; there are many Bond girls
+
+  (let [tx-result          @(td/transact *conn*
+                              (td/new-entity {:person/name "Sylvia Trench"})
+                              (td/new-entity {:person/name "Tatiana Romanova"})
+                              (td/new-entity {:person/name "Pussy Galore"})
+                              (td/new-entity {:person/name "Bibi Dahl"})
+                              (td/new-entity {:person/name "Octopussy"})
+                              (td/new-entity {:person/name "Paris Carver"})
+                              (td/new-entity {:person/name "Christmas Jones"}))
+        tx-datoms          (td/tx-datoms (live-db) tx-result)
+        girl-datoms        (vec (remove #(= :db/txInstant (grab :a %)) tx-datoms))
+        girl-eids          (mapv :e girl-datoms)
+        txr-2              (td/transact *conn*
+                             (td/update [:person/name "James Bond"] ; update using a LookupRef
+                               {:bond-girl girl-eids})
+                             (td/update [:person/name "James Bond"] ; don't forget to add Honey Rider!
+                               {:bond-girl #{[:person/name "Honey Rider"]}}))
+  ]
+    (is (= (get-bond-girl-names)
+          ["Sylvia Trench" "Tatiana Romanova" "Pussy Galore" "Bibi Dahl"
+           "Octopussy" "Paris Carver" "Christmas Jones" "Honey Rider"]))
+
+    ; Suppose Bibi Dahl is just not refined enough for James. Give her a demotion.
+    (td/transact *conn*
+      (td/retract-value [:person/name "James Bond"] :bond-girl [:person/name "Bibi Dahl"]))
+    (is (= (get-bond-girl-names) ; Note that Bibi Dahl is no longer listed
+          ["Sylvia Trench" "Tatiana Romanova" "Pussy Galore"
+           "Octopussy" "Paris Carver" "Christmas Jones" "Honey Rider"] ))
+    )
 
   ; #todo verify that datomic/q returns TupleSets (i.e. no duplicate tuples in result)
 )

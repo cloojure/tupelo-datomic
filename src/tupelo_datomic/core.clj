@@ -217,6 +217,7 @@
   [entity-spec    :- ts/EntitySpec
    attr-val-map   :- ts/KeyMap ]
     (glue {:db/id entity-spec} attr-val-map))
+; #todo error check: for each attr, if it is :card/many, verify value is a set!
 
 (s/defn retract-value :- ts/Vec4
   "Returns the tx-data to retract an attribute-value pair for an entity. Only a single

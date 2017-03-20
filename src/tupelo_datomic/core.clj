@@ -543,11 +543,11 @@
       :added  - true/false (assertion/retraction) }
   "
   [datom :- s/Any]  ; #todo
-  { :e            (:e     datom)
-    :a      (long (:a     datom)) ; must cast Integer -> Long
-    :v            (:v     datom)  ; #todo - add tests to catch changes
-    :tx           (:tx    datom)
-    :added        (:added datom) } )
+  {:e     (:e datom)
+   :a     (long (:a datom)) ; must cast Integer -> Long
+   :v     (:v datom) ; #todo - add tests to catch changes
+   :tx    (:tx datom)
+   :added (:added datom)})
 
 ; #todo - need test
 ; #todo - make non-lazy?

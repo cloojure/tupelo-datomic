@@ -338,15 +338,17 @@
                         ["Honey Rider"    "Caribbean"] } )))
 
   (defn get-bond-girl-names []
-    (let [result-pull (d/pull (live-db) [:bond-girl] [:person/name "James Bond"])
+    (let [result-pull     (d/pull (live-db) [:bond-girl] [:person/name "James Bond"])
           bond-girl-names (forv [girl-entity (grab :bond-girl result-pull) ]
                                (grab :person/name (td/entity-map (live-db) (grab :db/id girl-entity))))
           ]
+
       bond-girl-names))
 
   (td/transact *conn*
     (td/new-attribute :bond-girl :db.type/ref :db.cardinality/many))  ; there are many Bond girls
 
+  ; #todo modify to use tempIds (string or negative int)
   (let [tx-result          @(td/transact *conn*
                               (td/new-entity {:person/name "Sylvia Trench"})
                               (td/new-entity {:person/name "Tatiana Romanova"})

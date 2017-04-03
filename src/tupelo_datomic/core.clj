@@ -505,12 +505,13 @@
 ;---------------------------------------------------------------------------------------------------
 ; Informational functions
 
+; #todo: make default?
 (s/defn entity-map-full :- ts/KeyMap  ; #todo - need test & -> demo/doc
   "Returns a map of an entity's attribute-value pairs. A simpler, eager version of datomic/entity."
   [db-val         :- datomic.db.Db
    entity-spec    :- ts/EntitySpec ]
   (let [ entity   (d/entity db-val entity-spec)   ; does not include :db/id attr/val
-         eid      (:db/id entity) ]               ; unless we explicitly ask for it
+         eid      (:db/id entity) ]               ; ... unless we explicitly ask for it
     (into {:db/id eid} entity)))
 
 (s/defn entity-map :- ts/KeyMap  ; #todo - need test

@@ -531,6 +531,10 @@ Copyright © 2015-2016  Alan Thompson
 
 Distributed under the Eclipse Public License, the same as Clojure.
 
+Developed using *IntelliJ IDEA* 
+image:resources/intellij-idea-logo-400.png[IntelliJ]
+
+
 ==== ToDo List (#todo)
 
   add example for (d/entity-db ...)

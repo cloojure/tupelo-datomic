@@ -260,7 +260,8 @@ non-unique values will be discarded.
 
 What if you want to query for a person with two types of weapons? Suppose you wish to find all of
 the operatives with both `:weapon/guile` and `:weapon/gun` attributes (or more)?  Then just list
-both desired traits, and Datomic will perform in implicit `AND` operation in the query:
+both desired traits, and Datomic will perform in implicit join operation in the query (logical
+"and"):
 
 [source,clojure]
 ----

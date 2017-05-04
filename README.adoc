@@ -258,6 +258,20 @@ shape `[?name ?loc]`. Each output tuple is added to the result set, which is ret
 Since the returned value is a normal Clojure set, duplicate elements are not allowed and any
 non-unique values will be discarded.
 
+What if you want to query for a person with two types of weapons? Suppose you wish to find all of
+the operatives with both `:weapon/guile` and `:weapon/gun` attributes (or more)?  Then just list
+both desired traits, and Datomic will perform in implicit `AND` operation in the query:
+
+[source,clojure]
+----
+; Search for people that match both {:weapon/type :weapon/guile} and {:weapon/type :weapon/gun}
+(let [tuple-set   (td/find :let    [$ (live-db)]
+                           :find   [?name]
+                           :where  {:person/name ?name :weapon/type :weapon/guile }
+                                   {:person/name ?name :weapon/type :weapon/gun } ) ]
+  (is (= #{["Dr No"] ["M"]} tuple-set )))
+----
+
 Receiving a TupleSet result is the most general case, but in many instances we
 can save some effort.  If we are retrieving the value for a single attribute per
 entity, we don't need to wrap that result in a tuple. In this case, we can use

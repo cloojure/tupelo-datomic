@@ -124,6 +124,15 @@
          {:person/name "M"          :location "London"    :weapon/type #{:weapon/guile                           :weapon/gun} }
          {:person/name "Dr No"      :location "Caribbean" :weapon/type #{:weapon/guile             :weapon/knife :weapon/gun} } } ))
 
+    ;-----------------------------------------------------------------------------
+    ; Search for people that match both {:weapon/type :weapon/guile} and {:weapon/type :weapon/gun}
+    (let [tuple-set   (td/find :let    [$ (live-db)]
+                               :find   [?name]
+                               :where  {:person/name ?name :weapon/type :weapon/guile }
+                                       {:person/name ?name :weapon/type :weapon/gun } ) ]
+      (is (= #{["Dr No"] ["M"]} tuple-set )))
+
+    ;-----------------------------------------------------------------------------
     ; Try to add non-existent weapon. This throws since the bogus kw does not match up with an entity.
     (is (thrown? Exception   @(td/transact *conn* 
                                 (td/update [:person/name "James Bond"] ; update using a LookupRef
@@ -229,6 +238,7 @@
     (is (re-find #"Exception" busy))   ; Exception thrown/caught since 2 people in London
     (is (re-find #"Exception" multi))) ; Exception thrown/caught since 2-vector is not scalar
 
+;-----------------------------------------------------------------------------
 ; #todo make ?*   a synonym for _ wildcard (?)
 ; #todo make :eid a synonym for #db/id key (?)
 

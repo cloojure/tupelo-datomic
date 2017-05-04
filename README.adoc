@@ -534,7 +534,7 @@ Distributed under the Eclipse Public License, the same as Clojure.
 Developed using *IntelliJ IDEA* 
 
 image:resources/intellij-idea-logo-400.png[IntelliJ,200,200,float="left"]
-image:resources/cursive-logo.svg[Cursive,200,200,float="center"]
+image:resources/cursive-logo-300.png[Cursive,float="center"]
 
 
 ==== ToDo List (#todo)

@@ -10,7 +10,9 @@
     [tupelo.schema        :as ts]
   ))
 
-(spyx *clojure-version*)
+; #todo convert all matches? to wild-match? or submatch?
+
+(spyx *clojure-version*)  ; #todo  move to _bootstrap.clj
 (set! *warn-on-reflection* false)
 (set! *print-length* nil)
 (s/set-fn-validation! true)             ; enable Prismatic Schema type definitions (#todo add to Schema docs)

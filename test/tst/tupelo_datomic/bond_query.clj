@@ -1,18 +1,14 @@
 (ns tst.tupelo-datomic.bond-query
+  (:use tupelo.test)
   (:require [tupelo-datomic.core  :as td]
             [tupelo.schema        :as ts]
             [datomic.api          :as d]
             [schema.core          :as s]
             [tupelo.core :as t]
-  )
-  (:use clojure.test)
-  (:use tupelo.core)
-)
+  ))
+(t/refer-tupelo)
 
 (spyx *clojure-version*)
-(set! *warn-on-reflection* false)
-(set! *print-length* nil)
-(s/set-fn-validation! true)             ; enable Prismatic Schema type definitions (#todo add to Schema docs)
 
 (def datomic-uri "datomic:mem://tst.bond")      ; the URI for our test db
 (def ^:dynamic *conn*)                  ; dynamic var to hold the db connection
@@ -196,7 +192,7 @@
                                                [?eid :location    ?loc ] ] )
                     (catch Exception ex (.toString ex)))
   ]
-    (is (matches? [_ "Dr No"] beachy ))           ; found 1 match as expected
+    (is (wild-match? [:* "Dr No"] beachy ))           ; found 1 match as expected
     (is (re-find #"Exception" busy)))  ; Exception thrown/caught since 2 people in London
 
 

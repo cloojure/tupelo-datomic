@@ -1,5 +1,5 @@
 (ns tst.tupelo-datomic.bond
-  (:use clojure.test tupelo.test)
+  (:use tupelo.test)
   (:require
     [clojure.pprint       :refer [pprint]]
     [datomic.api          :as d]

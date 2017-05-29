@@ -1,5 +1,5 @@
 (ns tst.tupelo-datomic.core
-  (:use clojure.test tupelo.test)
+  (:use tupelo.test)
   (:require [datomic.api          :as d]
             [tupelo-datomic.core  :as td]
             [tupelo.schema        :as ts]

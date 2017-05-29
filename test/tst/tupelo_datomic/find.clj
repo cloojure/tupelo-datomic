@@ -1,5 +1,5 @@
 (ns tst.tupelo-datomic.find
-  (:use clojure.test)
+  (:use tupelo.test)
  ;(:refer-clojure :exclude [clojure.core find] )
   (:require [datomic.api          :as d]
             [tupelo-datomic.core  :as td]

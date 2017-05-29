@@ -7,7 +7,7 @@
     [com.datomic/datomic-pro          "0.9.5359" :exclusions [joda-time]]
     [org.clojure/clojure              "1.8.0"]
     [prismatic/schema                 "1.1.3"]
-    [tupelo                           "0.9.42"]
+    [tupelo                           "0.9.43"]
   ]
   :profiles { :dev      {:dependencies [[org.clojure/test.check "0.9.0"]] }
              :uberjar  {:aot :all}}

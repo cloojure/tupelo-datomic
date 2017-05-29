@@ -1,5 +1,5 @@
 (ns tst.tupelo-datomic.bond
-  (:use clojure.test)
+  (:use clojure.test tupelo.test)
   (:require
     [clojure.pprint       :refer [pprint]]
     [datomic.api          :as d]
@@ -79,10 +79,10 @@
     (td/new-entity { :person/name "Dr No"      :location "Caribbean"  :weapon/type    :weapon/gun                 } ))
 
   ; Verify the antagonists were added to the DB
-  (is (= (get-people (live-db))
+  (is= (get-people (live-db))
          #{ {:person/name "James Bond"    :location "London"      :weapon/type #{:weapon/wit    :weapon/gun} }
             {:person/name "M"             :location "London"      :weapon/type #{:weapon/guile  :weapon/gun} }
-            {:person/name "Dr No"         :location "Caribbean"   :weapon/type #{:weapon/gun               } } } ))
+            {:person/name "Dr No"         :location "Caribbean"   :weapon/type #{:weapon/gun               } } } )
 
   ; Using James' name, lookup his EntityId (EID). It is a java.lang.Long that is a unique ID across the whole DB.
   (let [james-eid   (td/find-value   :let    [$ (live-db)]     ; like Clojure let
@@ -94,8 +94,8 @@
         james-map   (td/entity-map (live-db) james-eid)                       ; lookup by EID
         james-map2  (td/entity-map (live-db) [:person/name "James Bond"] )    ; lookup by LookupRef
   ]
-    (is (= james-map james-map2
-           {:person/name "James Bond" :location "London" :weapon/type #{:weapon/wit :weapon/gun} } ))
+    (is= james-map james-map2
+           {:person/name "James Bond" :location "London" :weapon/type #{:weapon/wit :weapon/gun} } )
 
     ; Adding nil values is not allowed, and will generate an Exception.
     (is (thrown? Exception   @(td/transact *conn*
@@ -114,10 +114,10 @@
         { :weapon/type #{ :weapon/gun :weapon/knife :weapon/guile } } ))
 
     ; Verify current status. Notice there are no duplicate weapons.
-    (is (= (get-people (live-db))
+    (is= (get-people (live-db))
       #{ {:person/name "James Bond" :location "London"    :weapon/type #{              :weapon/wit :weapon/knife :weapon/gun} :person/secret-id 7 }
          {:person/name "M"          :location "London"    :weapon/type #{:weapon/guile                           :weapon/gun} }
-         {:person/name "Dr No"      :location "Caribbean" :weapon/type #{:weapon/guile             :weapon/knife :weapon/gun} } } ))
+         {:person/name "Dr No"      :location "Caribbean" :weapon/type #{:weapon/guile             :weapon/knife :weapon/gun} } } )
 
     ;-----------------------------------------------------------------------------
     ; Search for people that match both {:weapon/type :weapon/guile} and {:weapon/type :weapon/gun}
@@ -125,7 +125,7 @@
                                :find   [?name]
                                :where  {:person/name ?name :weapon/type :weapon/guile }
                                        {:person/name ?name :weapon/type :weapon/gun } ) ]
-      (is (= #{["Dr No"] ["M"]} tuple-set )))
+      (is= #{["Dr No"] ["M"]} tuple-set ))
 
     ;-----------------------------------------------------------------------------
     ; Try to add non-existent weapon. This throws since the bogus kw does not match up with an entity.
@@ -136,37 +136,37 @@
     ; What if James throws his knife at a villan.  We must remove it from the db.
     (td/transact *conn*
       (td/retract-value [:person/name "James Bond"] :weapon/type :weapon/knife))
-    (is (= (td/entity-map (live-db) [:person/name "James Bond"]) ; LookupRef
-          {:person/name "James Bond" :location "London" :weapon/type #{:weapon/wit :weapon/gun} :person/secret-id 7 } ))
+    (is= (td/entity-map (live-db) [:person/name "James Bond"]) ; LookupRef
+          {:person/name "James Bond" :location "London" :weapon/type #{:weapon/wit :weapon/gun} :person/secret-id 7 } )
 
     ; Dr No is no match for James. He gives up trying to use guile...  Remove it using native Datomic.
     (td/entity-map (live-db) [:person/name "Dr No"])
     (d/transact *conn* [
        [:db/retract [:person/name "Dr No"] :weapon/type :weapon/guile]
     ] )
-    (is (= (td/entity-map (live-db) [:person/name "Dr No"]) ; LookupRef
-          {:person/name "Dr No" :location "Caribbean" :weapon/type #{:weapon/knife :weapon/gun} } ))
+    (is= (td/entity-map (live-db) [:person/name "Dr No"]) ; LookupRef
+          {:person/name "Dr No" :location "Caribbean" :weapon/type #{:weapon/knife :weapon/gun} } )
 
     ; James is on a secret mission, & no one knows where...
     (td/transact *conn*
       (td/retract-value james-eid :location "London")) ; We must know the current value to retract it
-    (is (= (td/entity-map (live-db) james-eid)  ; lookup by EID
-           {:person/name "James Bond" :weapon/type #{:weapon/wit :weapon/gun} :person/secret-id 7 } ))
+    (is= (td/entity-map (live-db) james-eid)  ; lookup by EID
+           {:person/name "James Bond" :weapon/type #{:weapon/wit :weapon/gun} :person/secret-id 7 } )
     ; James turns up in the Caribbean
     (td/transact *conn*
       (td/update james-eid {:location "Caribbean"} ))  ; add a value where none exists
-    (is (= (td/entity-map (live-db) james-eid)  ; lookup by EID
-           {:person/name "James Bond" :location "Caribbean" :weapon/type #{:weapon/wit :weapon/gun} :person/secret-id 7 } ))
+    (is= (td/entity-map (live-db) james-eid)  ; lookup by EID
+           {:person/name "James Bond" :location "Caribbean" :weapon/type #{:weapon/wit :weapon/gun} :person/secret-id 7 } )
     ; James then returns to London
     (td/transact *conn*
       (td/update james-eid {:location "London"} ))  ; overwrite an existing value (implicitly retracts old value, then adds new value)
-    (is (= (td/entity-map (live-db) james-eid)  ; lookup by EID
-           {:person/name "James Bond" :location "London" :weapon/type #{:weapon/wit :weapon/gun} :person/secret-id 7 } ))
+    (is= (td/entity-map (live-db) james-eid)  ; lookup by EID
+           {:person/name "James Bond" :location "London" :weapon/type #{:weapon/wit :weapon/gun} :person/secret-id 7 } )
 
     ; (td/entity-map-full ...) includes the EID in the result under the native Datomic keyword :db/id
-    (is (= (td/entity-map-full (live-db) james-eid)  ; lookup by EID
+    (is= (td/entity-map-full (live-db) james-eid)  ; lookup by EID
            {:person/name "James Bond" :location "London" :weapon/type #{:weapon/wit :weapon/gun} :person/secret-id 7
-            :db/id james-eid } ))
+            :db/id james-eid } )
   )
 
   ; For general queries, use td/find.  It returns a set of tuples (a TupleSet).  Duplicate
@@ -177,9 +177,9 @@
   ]
     (s/validate  ts/TupleSet  tuple-set)       ; verify expected type using Prismatic Schema
     (s/validate #{ [s/Any] }  tuple-set)       ; literal definition of TupleSet
-    (is (= tuple-set #{ ["Dr No"       "Caribbean"]      ; Even though London is repeated, each tuple is
+    (is= tuple-set #{ ["Dr No"       "Caribbean"]      ; Even though London is repeated, each tuple is
                         ["James Bond"  "London"]         ; still unique. Otherwise, any duplicate tuples
-                        ["M"           "London"] } )))   ; will be discarded since output is a clojure set.
+                        ["M"           "London"] } ))   ; will be discarded since output is a clojure set.
 
   ; If you want just a single attribute as output, you can get a set of attributes (rather than a set of
   ; tuples) using td/find-attr.  As usual, any duplicate values will be discarded. It is an error if
@@ -191,8 +191,8 @@
                                  :find   [?loc]  ; <- a single attr-val output allows use of td/find-attr
                                  :where  {:location ?loc} )
   ]
-    (is (= names    #{"Dr No" "James Bond" "M"} ))  ; all names are present, since unique
-    (is (= cities   #{"Caribbean" "London"} )))     ; duplicate "London" discarded
+    (is= names    #{"Dr No" "James Bond" "M"} )  ; all names are present, since unique
+    (is= cities   #{"Caribbean" "London"} ))     ; duplicate "London" discarded
 
   ; If you want just a single tuple as output, you can get it (rather than a set of
   ; tuples) using td/find-entity.  It is an error if more than one tuple is found.
@@ -229,7 +229,7 @@
                                      :where  {:db/id ?eid :person/name  ?name :location ?loc} )
                     (catch Exception ex (.toString ex)))
   ]
-    (is (= beachy "Dr No"))                       ; found 1 match as expected
+    (is= beachy "Dr No")               ; found 1 match as expected
     (is (re-find #"Exception" busy))   ; Exception thrown/caught since 2 people in London
     (is (re-find #"Exception" multi))) ; Exception thrown/caught since 2-vector is not scalar
 
@@ -246,9 +246,9 @@
   ]
     (s/validate [ts/TupleMap]   result-pull)  ; a list of tuples of maps
     (s/validate  ts/TupleMaps   result-pull)  ; a list of tuples of maps
-    (is (= result-sort  [ [ {:location "Caribbean"} ]
-                          [ {:location "London"   } ]
-                          [ {:location "London"   } ] ] )))
+    (is= result-sort [[{:location "Caribbean"}]
+                      [{:location "London"}]
+                      [{:location "London"}]]))
 ; #todo show Exception if non-pull
 
 ; #todo Add example linking entities (& README)
@@ -282,19 +282,16 @@
         tx-datoms   (td/tx-datoms (live-db) tx-result)
   ]
     (s/validate ts/Eid honey-eid)  ; verify the expected type
-    (is (= honey-eid honey-eid2))
-    (is (= :people ; verify the partition name for Honey's EID
-           (td/partition-name (live-db) honey-eid)))
+    (is= honey-eid honey-eid2)
+    (is= :people ; verify the partition name for Honey's EID
+           (td/partition-name (live-db) honey-eid))
 
     ; Show that only Honey is in the people partition
     (let [people-eids           (td/partition-eids (live-db) :people)
           people-entity-maps    (mapv  #(td/entity-map (live-db) %)  people-eids) ]
-      (is (= (only people-entity-maps)
-             {:person/name "Honey Rider", :weapon/type #{:weapon/knife}, :location "Caribbean"} )))
-
-
-    ; (print "Honey tx-datoms =") (pprint tx-datoms)
-    ; tx-datoms looks like:
+      (is= (only people-entity-maps)
+             {:person/name "Honey Rider", :weapon/type #{:weapon/knife}, :location "Caribbean"} ))
+    ; tx-datoms looks like:   ;;; (print "Honey tx-datoms =") (pprint tx-datoms)
     ;    [ {:e 13194139534328,
     ;       :a :db/txInstant,
     ;       :v #inst "2016-10-02T21:45:44.689-00:00",
@@ -315,10 +312,10 @@
     ;       :v 17592186045419,
     ;       :tx 13194139534328,
     ;       :added true} ]
-    (is (= "Honey Rider" (:v (only (keep-if #(= :person/name  (:a %)) tx-datoms)))))
-    (is (= "Caribbean"   (:v (only (keep-if #(= :location     (:a %)) tx-datoms)))))
-    (is (= 1                (count (keep-if #(= :weapon/type  (:a %)) tx-datoms))))
-    (is (= 1                (count (keep-if #(= :db/txInstant (:a %)) tx-datoms))))
+    (is= "Honey Rider" (:v (only (keep-if #(= :person/name  (:a %)) tx-datoms))))
+    (is= "Caribbean"   (:v (only (keep-if #(= :location     (:a %)) tx-datoms))))
+    (is= 1                (count (keep-if #(= :weapon/type  (:a %)) tx-datoms)))
+    (is= 1                (count (keep-if #(= :db/txInstant (:a %)) tx-datoms)))
     (is (apply = (map :tx tx-datoms)))  ; All datoms have the same :tx value
   )
 
@@ -327,10 +324,10 @@
   (let [tuple-set   (td/find  :let    [$ (live-db)]
                               :find   [?name ?loc] ; <- shape of output tuples
                               :where  {:person/name ?name :location ?loc} ) ]
-    (is (= tuple-set #{ ["James Bond"     "London"]
-                        ["M"              "London"]
-                        ["Dr No"          "Caribbean"]
-                        ["Honey Rider"    "Caribbean"] } )))
+    (is= tuple-set #{["James Bond" "London"]
+                     ["M" "London"]
+                     ["Dr No" "Caribbean"]
+                     ["Honey Rider" "Caribbean"]}))
   ; we do the retraction...
   (td/transact *conn*
     (td/retract-entity [:person/name "Dr No"] ))
@@ -338,9 +335,9 @@
   (let [tuple-set   (td/find  :let    [$ (live-db)]
                               :find   [?name ?loc]
                               :where  {:person/name ?name :location ?loc} ) ]
-    (is (= tuple-set #{ ["James Bond"     "London"]
-                        ["M"              "London"]
-                        ["Honey Rider"    "Caribbean"] } )))
+    (is= tuple-set #{["James Bond" "London"]
+                     ["M" "London"]
+                     ["Honey Rider" "Caribbean"]}))
 
   (defn get-bond-girl-names []
     (let [result-pull     (d/pull (live-db) [:bond-girl] [:person/name "James Bond"])
@@ -371,9 +368,9 @@
                              (td/update [:person/name "James Bond"] ; don't forget to add Honey Rider!
                                {:bond-girl #{[:person/name "Honey Rider"]}}))
   ]
-    (is (= (get-bond-girl-names)
+    (is= (get-bond-girl-names)
           ["Sylvia Trench" "Tatiana Romanova" "Pussy Galore" "Bibi Dahl"
-           "Octopussy" "Paris Carver" "Christmas Jones" "Honey Rider"]))
+           "Octopussy" "Paris Carver" "Christmas Jones" "Honey Rider"])
 
     ; Suppose Bibi Dahl is just not refined enough for James. Give her a demotion.
     (td/transact *conn*

@@ -172,38 +172,36 @@
     (is (wild-match? [:idx :*] part2))
     (is (s/validate ts/Eid (second part2)))))
 
-;(deftest t-new-enum
-;  (is (matches? {:db/id #db/id[:db.part/user _]  :db/ident :weapon.type/gun}
-;                (td/new-enum :weapon.type/gun)))
-;  (is (matches? {:db/id #db/id[:db.part/user _]  :db/ident :gun}
-;                (td/new-enum :gun)))
-;  (is (thrown? Exception (td/new-enum "gun"))))
-;
-;; #todo: need more tests for query-*, etc
-;
-;(deftest t-update
-;  (is (matches? {:db/id 999 :person/name "joe" :car :car.type/bmw}
-;                (td/update 999 {:person/name "joe"  :car :car.type/bmw} )))
-;  (is (matches? {:db/id [:person/name "joe"] :car :car.type/bmw}
-;                (td/update [:person/name "joe"] {:car :car.type/bmw} ))))
-;
-;(deftest t-retract-value
-;  (is (matches? [:db/retract      999 :car :car.type/bmw]
-;                (td/retract-value 999 :car :car.type/bmw)))
-;  (is (matches? [:db/retract      [:person/name "joe"] :car :car.type/bmw]
-;                (td/retract-value [:person/name "joe"] :car :car.type/bmw))))
-;
-;(deftest t-retract-entity
-;  (is (matches?  [:db.fn/retractEntity 999] (td/retract-entity 999 )))
-;  (is (matches?  [:db.fn/retractEntity [:person/name "joe"] ]
-;                 (td/retract-entity    [:person/name "joe"] ))))
-;
-;; The macro test must be in the same source file as the macro definition or it won't expand properly
-;(deftest t-macro
-;  (is (td/t-query)))
-;
-;(deftest t-contains-pull?
-;  (let [proxy-contains-pull? #'td/contains-pull? ] ; trick to get around private var
-;    (is       (proxy-contains-pull? [:find '[xx (pull [*]) ?y ]] ))
-;    (is (not  (proxy-contains-pull? [:find '[xx            ?y ]] )))))
+(deftest t-new-enum
+  (is (submatch? {:db/ident :weapon.type/gun} (td/new-enum :weapon.type/gun)))
+  (is (submatch? {:db/ident :gun} (td/new-enum :gun)))
+  (is (thrown? Exception (td/new-enum "gun"))))
+
+; #todo: need more tests for query-*, etc
+
+(deftest t-update
+  (is= {:db/id 999 :person/name "joe" :car :car.type/bmw}
+        (td/update 999 {:person/name "joe" :car :car.type/bmw}))
+  (is= {:db/id [:person/name "joe"] :car :car.type/bmw}
+        (td/update [:person/name "joe"] {:car :car.type/bmw})))
+
+(deftest t-retract-value
+  (is= [:db/retract 999 :car :car.type/bmw]
+        (td/retract-value 999 :car :car.type/bmw))
+  (is= [:db/retract [:person/name "joe"] :car :car.type/bmw]
+        (td/retract-value [:person/name "joe"] :car :car.type/bmw)))
+
+(deftest t-retract-entity
+  (is= [:db.fn/retractEntity 999] (td/retract-entity 999))
+  (is= [:db.fn/retractEntity [:person/name "joe"]]
+        (td/retract-entity [:person/name "joe"])))
+
+; The macro test must be in the same source file as the macro definition or it won't expand properly
+(deftest t-macro
+  (is (td/t-query)))
+
+(deftest t-contains-pull?
+  (let [proxy-contains-pull? #'td/contains-pull? ] ; trick to get around private var
+    (is       (proxy-contains-pull? [:find '[xx (pull [*]) ?y ]] ))
+    (is (not  (proxy-contains-pull? [:find '[xx            ?y ]] )))))
 

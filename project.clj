@@ -6,11 +6,12 @@
   :dependencies [
     [com.datomic/datomic-pro          "0.9.5359" :exclusions [joda-time]]
     [org.clojure/clojure              "1.8.0"]
-    [org.clojure/core.match           "0.3.0-alpha4"]
-    [org.clojure/test.check           "0.9.0"]
     [prismatic/schema                 "1.1.3"]
-    [tupelo                           "0.1.67"]
+    [tupelo                           "0.9.41"]
   ]
+  :profiles { :dev      {:dependencies [[org.clojure/test.check "0.9.0"]] }
+             :uberjar  {:aot :all}}
+  :global-vars { *warn-on-reflection* false }
 
   :repositories {"my.datomic.com" {:url "https://my.datomic.com/repo"
                                    :creds :gpg}}
@@ -24,9 +25,6 @@
   :main ^:skip-aot tupelo-datomic.core
   :target-path "target/%s"
   :clean-targets [ "target" ]
-  :profiles { ; :dev      { :certificates ["clojars.pom"] }
-              :uberjar  { :aot :all }
-            }
 
   ; "lein test"         will not  run tests marked with the ":slow" metadata
   ; "lein test :slow"   will only run tests marked with the ":slow" metadata

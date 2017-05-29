@@ -5,9 +5,8 @@
             [tupelo-datomic.schema  :as tsd]  ; #todo tsd -> tds
             [schema.core            :as s]
             [tupelo.core :as t]
-            )
-  (:use tupelo.core)
-  )
+            ) )
+(t/refer-tupelo)
 
 ;---------------------------------------------------------------------------------------------------
 ; Notes:
@@ -452,7 +451,7 @@
   [args-vec]
   (let [args-map    (apply hash-map args-vec)
         find-vec    (flatten [ (grab :find args-map) ] ) ]
-    (any? #(= 'pull %) find-vec)))
+    (t/has-some? #(= 'pull %) find-vec)))
 
 (defmacro find-pull
  "Returns a TupleList [Tuple] of query results, where items may be duplicated. Intended only for

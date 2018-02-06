@@ -3,8 +3,8 @@
   (:require
     [datomic.api :as d]
     [schema.core :as s]
-    [tupelo.schema :as ts]
     [tupelo-datomic.core :as td]
+    [tupelo.schema :as ts]
   ))
 
 (def datomic-uri "datomic:mem://tst.bond")      ; the URI for our test db

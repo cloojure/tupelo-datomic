@@ -1,12 +1,12 @@
-(ns tupelo-datomic.core 
+(ns tupelo-datomic.core
+  (:use tupelo.core)
   (:refer-clojure :exclude [update partition])
-  (:require [datomic.api            :as d]
-            [tupelo.schema          :as ts]
-            [tupelo-datomic.schema  :as tsd]  ; #todo tsd -> tds
-            [schema.core            :as s]
-            [tupelo.core :as t]
-            ) )
-(t/refer-tupelo)
+  (:require
+    [datomic.api :as d]
+    [schema.core :as s]
+    [tupelo-datomic.schema :as tsd] ; #todo tsd -> tds
+    [tupelo.schema :as ts]
+  ))
 
 ;---------------------------------------------------------------------------------------------------
 ; Notes:
@@ -451,7 +451,7 @@
   [args-vec]
   (let [args-map    (apply hash-map args-vec)
         find-vec    (flatten [ (grab :find args-map) ] ) ]
-    (t/has-some? #(= 'pull %) find-vec)))
+    (has-some? #(= 'pull %) find-vec)))
 
 (defmacro find-pull
  "Returns a TupleList [Tuple] of query results, where items may be duplicated. Intended only for

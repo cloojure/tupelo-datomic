@@ -1,12 +1,9 @@
 (ns tupelo-datomic.schema
-  (:require [schema.core      :as s]
-            [tupelo.schema    :as ts] )
-  (:import [java.util HashSet] )
-)
-
-;---------------------------------------------------------------------------------------------------
-; Prismatic Schema type definitions
-(s/set-fn-validation! true)   ; #todo add to Schema docs
+  (:use tupelo.core)
+  (:require
+    [schema.core      :as s]
+    [tupelo.schema    :as ts]
+  ))
 
 (def TxResult
   "A map returned by a successful transaction. Contains the keys 

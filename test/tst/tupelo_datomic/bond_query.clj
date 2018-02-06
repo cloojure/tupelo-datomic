@@ -39,8 +39,8 @@
   (let [eids  (td/query-attr  :let    [$ db-val]
                               :find   [?eid]  ; <- could also use Datomic Pull API
                               :where  [ [?eid :person/name] ] ) ]
-    (set  (for [eid eids]
-            (td/entity-map db-val eid)))))
+    (set (for [eid eids]
+           (td/entity-map db-val eid)))))
 
 ;---------------------------------------------------------------------------------------------------
 ; #todo

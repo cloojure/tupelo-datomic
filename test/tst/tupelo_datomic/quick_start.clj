@@ -3,6 +3,7 @@
   (:require
    ;[datomic.client.api :as d]
     [datomic.api        :as d]
+    [tupelo-datomic.core  :as td]
   ))
 
 (def use-datomic-cloud false)
@@ -44,41 +45,48 @@
 (def all-titles-q '[:find ?movie-title
                     :where [_ :movie/title ?movie-title]])
 
-(defmacro comment-if
-  [flag & forms]
-  (if-not flag
-    `(do ~@forms)))
-
-(defn exercise-db [conn]
-  (nl) (println "exercise-db - enter")
-  (nl) (spyx conn)
-  (nl) (spyx (d/transact conn {:tx-data movie-schema}))
-  (nl) (spyx (d/transact conn {:tx-data first-movies}))
-  (nl) (spyx (d/q all-titles-q (spyxx (d/db conn))))
-  (nl) (println "exercise-db - exit") )
-
+;(defmacro comment-if
+;  [flag & forms]
+;  (if-not flag
+;    `(do ~@forms)))
+;
+;(defn exercise-db [conn]
+;  (nl) (println "exercise-db - enter")
+;  (nl) (spyx conn)
+;  (nl) (spyx (d/transact conn {:tx-data movie-schema}))
+;  (nl) (spyx (d/transact conn {:tx-data first-movies}))
+;  (nl) (spyx (d/q all-titles-q (spyxx (d/db conn))))
+;  (nl) (println "exercise-db - exit") )
 
 (dotest
-  (println :test-enter)
-
-  (comment
-    (println :using-cloud)
-    (let [client (d/client cfg)
-          >>     (spyx client)
-          >>     (spyx (d/delete-database client {:db-name "movies"}))
-          >>     (spyx (d/create-database client {:db-name "movies"}))
-          conn   (d/connect client {:db-name "movies"})]
-      (exercise-db conn)
-      (spyx (d/delete-database client {:db-name "movies"}))))
+  ; Attemp to use Datomic Cloud Client API
+  ;(comment
+  ;  (println :using-cloud)
+  ;  (let [client (d/client cfg)
+  ;        >>     (spyx client)
+  ;        >>     (spyx (d/delete-database client {:db-name "movies"}))
+  ;        >>     (spyx (d/create-database client {:db-name "movies"}))
+  ;        conn   (d/connect client {:db-name "movies"})]
+  ;    (exercise-db conn)
+  ;    (spyx (d/delete-database client {:db-name "movies"})))
+  ;    (nl) (println :exit-jvm) (java.lang.System/exit 0)
+  ;)
 
   (do
     (println :using-local)
-  ; (spyx (d/delete-database datomic-uri))
-    (spyx (d/create-database datomic-uri))
+    (is (contains? #{true false} (d/delete-database datomic-uri))) ; true on success
+    (is= true (d/create-database datomic-uri)) ; true on success
     (let [conn (d/connect datomic-uri)]
-      (exercise-db conn)
-      (spyx (d/delete-database datomic-uri))))
-
-  ;(nl) (println :exit-jvm) (java.lang.System/exit 0)
-  (println :test-exit)
-)
+      (td/transact conn
+        (td/new-attribute :movie/title        :db.type/string :db.cardinality/one) ; "The title of the movie"
+        (td/new-attribute :movie/genre        :db.type/string :db.cardinality/one) ; "The genre of the movie"}
+        (td/new-attribute :movie/release-year :db.type/long   :db.cardinality/one)) ; "The year the movie was released in theaters"
+      (td/transact conn
+        (td/new-entity {:movie/title "The Goonies" :movie/genre "action/adventure" :movie/release-year 1985})
+        (td/new-entity {:movie/title "Commando" :movie/genre "action/adventure" :movie/release-year 1985})
+        (td/new-entity {:movie/title "Repo Man" :movie/genre "punk dystopia" :movie/release-year 1984}))
+      (is= #{"Repo Man" "Commando" "The Goonies"}
+        (td/query-attr :let    [$ (d/db conn)]
+                       :find   [?name]   ; <- could also use Datomic Pull API
+                       :where  [[_ :movie/title ?name]])))
+    (is= true (d/delete-database datomic-uri)))) ; true on success

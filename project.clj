@@ -27,8 +27,8 @@
    [tupelo "0.9.71"]
    ]
   :resource-paths ["resources/"
-                   "resources/datomic-free-everything.jar"
-                   ]
+                   "resources/datomic-free-0.9.5661-everything.jar"
+                  ]
   :profiles {:dev {:dependencies []
                    :plugins [[com.jakemccrary/lein-test-refresh   "0.22.0"]
                              [lein-ancient                        "0.6.15"]
@@ -57,7 +57,10 @@
   :test-selectors { :default    (complement :slow)
                     :slow       :slow }
 
-  :jvm-opts ["-Xms500m" "-Xmx2g" "--add-modules" "java.xml.bind"]
+  :jvm-opts [
+             "-Xms500m" "-Xmx2g"
+            ;"--add-modules" "java.xml.bind"
+            ]
   ; ["-Xms4g" "-Xmx8g" "-server"]
 
-)
+  )

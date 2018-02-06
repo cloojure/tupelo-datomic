@@ -1,12 +1,10 @@
 (ns tst.tupelo-datomic.bond-query
-  (:use tupelo.test)
+  (:use tupelo.core tupelo.test)
   (:require [tupelo-datomic.core  :as td]
             [tupelo.schema        :as ts]
             [datomic.api          :as d]
             [schema.core          :as s]
-            [tupelo.core :as t]
   ))
-(t/refer-tupelo)
 
 (spyx *clojure-version*)
 

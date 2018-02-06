@@ -1,11 +1,11 @@
 (ns tst.tupelo-datomic.core
-  (:use tupelo.test)
-  (:require [datomic.api          :as d]
-            [tupelo-datomic.core  :as td]
-            [tupelo.schema        :as ts]
-            [tupelo.core          :as t]
-            [schema.core          :as s]))
-(t/refer-tupelo)
+  (:use tupelo.core tupelo.test)
+  (:require
+    [datomic.api :as d]
+    [schema.core :as s]
+    [tupelo-datomic.core :as td]
+    [tupelo.schema :as ts]
+  ))
 
 (def datomic-uri "datomic:mem://tupelo")          ; the URI for our test db
 (def ^:dynamic *conn*)

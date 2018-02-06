@@ -1,14 +1,12 @@
 (ns tst.tupelo-datomic.bond
-  (:use tupelo.test)
+  (:use tupelo.core tupelo.test)
   (:require
     [clojure.pprint       :refer [pprint]]
     [datomic.api          :as d]
     [schema.core          :as s]
     [tupelo-datomic.core  :as td]
-    [tupelo.core          :as t]
     [tupelo.schema        :as ts]
   ))
- (t/refer-tupelo)
 
 (def datomic-uri "datomic:mem://tst.bond") ; the URI for our test db
 (def ^:dynamic *conn*) ; dynamic var to hold the db connection

@@ -1,12 +1,9 @@
 (ns tst.tupelo-datomic.find
-  (:use tupelo.test)
- ;(:refer-clojure :exclude [clojure.core find] )
+  (:use tupelo.core tupelo.test)
   (:require [datomic.api          :as d]
             [tupelo-datomic.core  :as td]
             [tupelo.schema        :as ts]
-            [tupelo.core :as t]
             [schema.core          :as s]))
-(t/refer-tupelo)
 
 (def datomic-uri "datomic:mem://tupelo")          ; the URI for our test db
 (def ^:dynamic *conn*)
@@ -89,10 +86,10 @@
 
 ;---------------------------------------------------------------------------------------------------
 ; The macro test must be in the same source file as the macro definition or it won't expand properly
-;(deftest t-macro
+;(dotest
 ;  (is (td/t-query)))
 
-(deftest t-find
+(dotest
   (let [james-eid  (td/query-value  :let    [$ (d/db *conn*)]
                                     :find   [?eid]
                                     :where  [[?eid :person/name "James Bond"]]) ]

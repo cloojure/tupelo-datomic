@@ -1,12 +1,11 @@
 (ns tst.tupelo-datomic.functionality
-  (:use tupelo.test)
-  (:require [tupelo-datomic.core  :as td]
-            [tupelo.schema        :as ts]
-            [datomic.api          :as d]
-            [schema.core          :as s]
-            [tupelo.core :as t]
+  (:use tupelo.core tupelo.test)
+  (:require
+    [datomic.api :as d]
+    [schema.core :as s]
+    [tupelo.schema :as ts]
+    [tupelo-datomic.core :as td]
   ))
-(t/refer-tupelo)
 
 (def datomic-uri "datomic:mem://tst.bond")      ; the URI for our test db
 (def ^:dynamic *conn*)                  ; dynamic var to hold the db connection
@@ -45,7 +44,7 @@
 ; demo to show changing an attribute (string -> integer, cardinality/one -> many, deleting an attribute
 ; example of retracting 1 item from a normal (cardinality/one) attribute & a cardinality/many attribute
 
-(deftest t-james-bond
+(dotest
 
   ; Attributes can be "namespaced" in a variety of ways
   (td/transact *conn*
@@ -67,8 +66,7 @@
   (td/transact *conn*
     (td/new-entity { :person/name "James Bond" :person.name "Jimmy" :person-name "Jack" } ))
 
-  (newline)
-  (is (= (spyx (get-people (live-db)))
+  (is (= (get-people (live-db))
           #{ { :person/name "James Bond" :person.name "Jimmy" :person-name "Jack" } } ))
 
 ; #todo verify that datomic/q returns TupleSets (i.e. no duplicate tuples in result)

@@ -1,7 +1,7 @@
 (ns tst.tupelo-datomic.quick-start
   (:use tupelo.core tupelo.test)
   (:require
-    [clojure.tools.logging :as log]
+   ;[clojure.tools.logging :as log]
    ;[datomic.client.api :as d]
     [datomic.api        :as d]
     [tupelo-datomic.core  :as td]
@@ -74,7 +74,8 @@
   ;)
 
   (do
-    (log/info :using-local)
+    (println :using-local)
+   ;(log/info :using-local)
     (is (contains? #{true false} (d/delete-database datomic-uri))) ; true on success
     (is= true (d/create-database datomic-uri)) ; true on success
     (let [conn (d/connect datomic-uri)]

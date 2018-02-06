@@ -1,7 +1,7 @@
 (ns tst.tupelo-datomic.bond
   (:use tupelo.core tupelo.test)
   (:require
-    [clojure.pprint       :refer [pprint]]
+    [clojure.pprint       :as pp]
     [datomic.api          :as d]
     [schema.core          :as s]
     [tupelo-datomic.core  :as td]
@@ -289,7 +289,7 @@
           people-entity-maps    (mapv  #(td/entity-map (live-db) %)  people-eids) ]
       (is= (only people-entity-maps)
              {:person/name "Honey Rider", :weapon/type #{:weapon/knife}, :location "Caribbean"} ))
-    ; tx-datoms looks like:   ;;; (print "Honey tx-datoms =") (pprint tx-datoms)
+    ; tx-datoms looks like:   ;;; (print "Honey tx-datoms =") (pp/pprint tx-datoms)
     ;    [ {:e 13194139534328,
     ;       :a :db/txInstant,
     ;       :v #inst "2016-10-02T21:45:44.689-00:00",

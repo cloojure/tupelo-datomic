@@ -1,4 +1,4 @@
-(defproject tupelo-datomic "0.9.3"
+(defproject tupelo-datomic "0.9.4"
   :description "Tupelo Datomic:  Datomic With A Spoonful of Honey"
   :url "http://github.com/cloojure/tupelo-datomic"
   :license {:name "Eclipse Public License"
@@ -39,7 +39,7 @@
                           "releases"  :clojars 
                           :sign-releases false }
   :update :daily ;  :always
-  :main ^:skip-aot tupelo-datomic.core
+; :main ^:skip-aot tupelo-datomic.core
   :target-path "target/%s"
   :clean-targets [ "target" ]
 

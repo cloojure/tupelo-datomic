@@ -17,6 +17,7 @@
   ;[org.clojure/data.xml "0.2.0-alpha5"]
   ;[org.clojure/math.combinatorics "0.1.4"]
   ;[org.clojure/tools.analyzer "0.6.9"]
+   [org.clojure/tools.logging "0.4.0"]
 
   ;[com.datomic/datomic-pro "0.9.5359" :exclusions [joda-time]]
   ;[com.datomic/client-cloud "0.8.50"]

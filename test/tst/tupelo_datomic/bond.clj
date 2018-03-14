@@ -346,17 +346,19 @@
       bond-girl-names))
 
   (td/transact *conn*
-    (td/new-attribute :bond-girl :db.type/ref :db.cardinality/many))  ; there are many Bond girls
+    (td/new-attribute :bond-girl :db.type/ref :db.cardinality/many)  ; there are many Bond girls
+    (td/new-attribute :best-friend :db.type/ref)  ; one can have many friends
 
+)
   ; #todo modify to use tempIds (string or negative int)
   (let [tx-result          @(td/transact *conn*
-                              (td/new-entity {:person/name "Sylvia Trench"})
-                              (td/new-entity {:person/name "Tatiana Romanova"})
-                              (td/new-entity {:person/name "Pussy Galore"})
-                              (td/new-entity {:person/name "Bibi Dahl"})
-                              (td/new-entity {:person/name "Octopussy"})
-                              (td/new-entity {:person/name "Paris Carver"})
-                              (td/new-entity {:person/name "Christmas Jones"}))
+                              (td/new-entity {:db/id "user" :person/name "Sylvia Trench" :best-friend "tr"})
+                              (td/new-entity {:db/id "tr" :person/name "Tatiana Romanova" :best-friend "user"})
+                              (td/new-entity {:db/id "pg" :person/name "Pussy Galore" :best-friend "bd"})
+                              (td/new-entity {:db/id "bd" :person/name "Bibi Dahl" :best-friend "op"})
+                              (td/new-entity {:db/id "op" :person/name "Octopussy" :best-friend "user"})
+                              (td/new-entity {:db/id "pc" :person/name "Paris Carver" :best-friend "cj"})
+                              (td/new-entity {:db/id "cj" :person/name "Christmas Jones" :best-friend "pc"}))
         tx-datoms          (td/tx-datoms (live-db) tx-result)
         girl-datoms        (vec (remove #(= :db/txInstant (grab :a %)) tx-datoms))
         girl-eids          (mapv :e girl-datoms)
@@ -376,8 +378,17 @@
     (is (= (get-bond-girl-names) ; Note that Bibi Dahl is no longer listed
           ["Sylvia Trench" "Tatiana Romanova" "Pussy Galore"
            "Octopussy" "Paris Carver" "Christmas Jones" "Honey Rider"] ))
-    )
+
+    (let [bibi-eid (only (only (td/find :let [$ (live-db)]
+                                 :find [?eid]
+                                 :where {:db/id ?eid :person/name "Bibi Dahl"})))
+
+          bibi     (td/entity-map (live-db) bibi-eid)
+          bf-eid   (fetch-in bibi [:best-friend :db/id])
+          bf       (td/entity-map (live-db) bf-eid)]
+      (is= "Bibi Dahl" (grab :person/name bibi))
+      (is= "Octopussy" (grab :person/name bf))))
 
   ; #todo verify that datomic/q returns TupleSets (i.e. no duplicate tuples in result)
-)
+  )
 

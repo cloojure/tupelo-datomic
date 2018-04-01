@@ -34,9 +34,9 @@
 (s/defn get-people :- ts/Set
   "Returns a set of entity maps for all entities with the :person/name attribute"
   [db-val :- s/Any]
-  (let [eids (td/find-attr :let [$ db-val]
-               :find [?eid] ; <- could also use Datomic Pull API
-               :where {:db/id ?eid :person/name _})]
+  (let [eids (onlies (td/find :let [$ db-val]
+                       :find [?eid] ; <- could also use Datomic Pull API
+                       :where {:db/id ?eid :person/name _}))]
     (set (for [eid eids]
            (td/entity-map db-val eid)))))
 
@@ -83,9 +83,9 @@
             {:person/name "Dr No"         :location "Caribbean"   :weapon/type #{:weapon/gun               } } } )
 
   ; Using James' name, lookup his EntityId (EID). It is a java.lang.Long that is a unique ID across the whole DB.
-  (let [james-eid   (td/find-value   :let    [$ (live-db)]     ; like Clojure let
-                                     :find   [?eid]
-                                     :where  {:db/id ?eid :person/name "James Bond"} )
+  (let [james-eid   (only2 (td/find :let [$ (live-db)] ; like Clojure let
+                             :find [?eid]
+                             :where {:db/id ?eid :person/name "James Bond"}))
         _ (s/validate ts/Eid james-eid)  ; verify the expected type
         ; Retrieve James' attr-val pairs as a map. An entity can be referenced either by EID or by a
         ; LookupRef, which is a unique attribute-value pair expressed as a vector.
@@ -180,51 +180,49 @@
                         ["M"           "London"] } ))   ; will be discarded since output is a clojure set.
 
   ; If you want just a single attribute as output, you can get a set of attributes (rather than a set of
-  ; tuples) using td/find-attr.  As usual, any duplicate values will be discarded. It is an error if
+  ; tuples) use (onlies ...).  As usual, any duplicate values will be discarded. It is an error if
   ; more than one attribute is present in the :find clause.
-  (let [names     (td/find-attr  :let     [$ (live-db)]
-                                 :find   [?name] ; <- a single attr-val output allows use of td/find-attr
-                                 :where  {:person/name ?name} )
-        cities    (td/find-attr  :let     [$ (live-db)]
-                                 :find   [?loc]  ; <- a single attr-val output allows use of td/find-attr
-                                 :where  {:location ?loc} )
-  ]
+  (let [names     (onlies (td/find :let [$ (live-db)]
+                            :find [?name] ; <- a single attr-val output
+                            :where {:person/name ?name}))
+        cities    (onlies (td/find :let [$ (live-db)]
+                            :find [?loc] ; <- a single attr-val output
+                            :where {:location ?loc}))
+        ]
     (is= names    #{"Dr No" "James Bond" "M"} )  ; all names are present, since unique
     (is= cities   #{"Caribbean" "London"} ))     ; duplicate "London" discarded
 
-  ; If you want just a single tuple as output, you can get it (rather than a set of
-  ; tuples) using td/find-entity.  It is an error if more than one tuple is found.
-  (let [beachy    (td/find-entity    :let    [$    (live-db)      ; assign multiple find variables
-                                              ?loc "Caribbean"]   ;   just like clojure 'let' special form
-                                     :find   [?eid ?name] ; <- output tuple shape
-                                     :where  {:db/id ?eid :person/name ?name :location ?loc} )
+  ; If you want just a single tuple as output, use (only ...)
+  (let [beachy    (only (td/find :let [$ (live-db) ; assign multiple find variables
+                                       ?loc "Caribbean"] ;   just like clojure 'let' special form
+                          :find [?eid ?name] ; <- output tuple shape
+                          :where {:db/id ?eid :person/name ?name :location ?loc}))
         busy      (try ; error - both James & M are in London
-                    (td/find-entity  :let    [$     (live-db)
-                                              ?loc  "London"]
-                                     :find   [?eid ?name] ; <- output tuple shape
-                                     :where  {:db/id ?eid :person/name ?name :location ?loc} )
+                    (only (td/find :let [$ (live-db)
+                                         ?loc "London"]
+                            :find [?eid ?name] ; <- output tuple shape
+                            :where {:db/id ?eid :person/name ?name :location ?loc}))
                     (catch Exception ex (.toString ex)))
   ]
     (is (wild-match? [:* "Dr No"] beachy ))           ; found 1 match as expected
     (is (re-find #"Exception" busy)))  ; Exception thrown/caught since 2 people in London
 
-  ; If you know there is (or should be) only a single scalar answer, you can get the scalar value as
-  ; output using td/find-value. It is an error if more than one tuple or value is present.
-  (let [beachy    (td/find-value   :let    [$    (live-db)     ; assign multiple find variables
-                                            ?loc "Caribbean"]  ; just like clojure 'let' special form
-                                   :find   [?name]
-                                   :where  {:person/name ?name :location ?loc} )
+  ; If you know there is (or should be) only a single scalar answer, use (only2 ...)
+  (let [beachy    (only2 (td/find :let [$ (live-db) ; assign multiple find variables
+                                        ?loc "Caribbean"] ; just like clojure 'let' special form
+                           :find [?name]
+                           :where {:person/name ?name :location ?loc}))
         busy      (try ; error - multiple results for London
-                    (td/find-value   :let    [$    (live-db)
-                                              ?loc "London"]
-                                     :find   [?eid]
-                                     :where  {:db/id ?eid :person/name ?name :location ?loc} )
+                    (only2 (td/find :let [$ (live-db)
+                                          ?loc "London"]
+                             :find [?eid]
+                             :where {:db/id ?eid :person/name ?name :location ?loc}))
                     (catch Exception ex (.toString ex)))
         multi     (try ; error - tuple [?eid ?name] is not scalar
-                    (td/find-value   :let    [$    (live-db)
-                                              ?loc "Caribbean"]
-                                     :find   [?eid ?name]
-                                     :where  {:db/id ?eid :person/name  ?name :location ?loc} )
+                    (only2 (td/find :let [$ (live-db)
+                                          ?loc "Caribbean"]
+                             :find [?eid ?name]
+                             :where {:db/id ?eid :person/name ?name :location ?loc}))
                     (catch Exception ex (.toString ex)))
   ]
     (is= beachy "Dr No")               ; found 1 match as expected

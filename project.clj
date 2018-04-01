@@ -17,8 +17,8 @@
                  [org.clojure/spec.alpha "0.1.143"]
                  [org.clojure/test.check "0.9.0"]
                  ;[org.clojure/tools.logging "0.4.0"]
-                 [prismatic/schema "1.1.7"]
-                 [tupelo "0.9.71"]
+                 [prismatic/schema "1.1.8"]
+                 [tupelo "0.9.74"]
                  ]
   :resource-paths ["resources/"
                    "resources/datomic-free-0.9.5661-everything.jar"

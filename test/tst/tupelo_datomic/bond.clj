@@ -34,7 +34,8 @@
 (s/defn get-people :- ts/Set
   "Returns a set of entity maps for all entities with the :person/name attribute"
   [db-val :- s/Any]
-  (let [eids (onlies (td/find :let [$ db-val]
+  (let [eids (onlies (td/find 
+                       :let [$ db-val]
                        :find [?eid] ; <- could also use Datomic Pull API
                        :where {:db/id ?eid :person/name _}))]
     (set (for [eid eids]
@@ -83,9 +84,9 @@
             {:person/name "Dr No"         :location "Caribbean"   :weapon/type #{:weapon/gun               } } } )
 
   ; Using James' name, lookup his EntityId (EID). It is a java.lang.Long that is a unique ID across the whole DB.
-  (let [james-eid   (only2 (td/find :let [$ (live-db)] ; like Clojure let
-                             :find [?eid]
-                             :where {:db/id ?eid :person/name "James Bond"}))
+  (let [james-eid   (only2 (td/find  :let [$ (live-db)] ; like Clojure let
+                                     :find [?eid]
+                                     :where {:db/id ?eid :person/name "James Bond"}))
         _ (s/validate ts/Eid james-eid)  ; verify the expected type
         ; Retrieve James' attr-val pairs as a map. An entity can be referenced either by EID or by a
         ; LookupRef, which is a unique attribute-value pair expressed as a vector.

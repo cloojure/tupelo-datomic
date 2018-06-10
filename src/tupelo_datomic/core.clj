@@ -218,7 +218,7 @@
     (glue {:db/id entity-spec} attr-val-map))
 ; #todo error check: for each attr, if it is :card/many, verify value is a set!
 
-(s/defn retract-value :- ts/Vec4
+(s/defn retract-value :- ts/Quad
   "Returns the tx-data to retract an attribute-value pair for an entity. Only a single
    attribute-value pair can be retracted for each call to retract-value.  Usage:
 
@@ -231,7 +231,7 @@
    value        :- s/Any ]
   [:db/retract entity-spec attribute value] )
 
-(s/defn retract-entity :- ts/Vec2
+(s/defn retract-entity :- ts/Pair
  "Returns the tx-data to retract all attribute-value pairs for an entity, as well as all references
   to the entity by other entities. Usage:
 
@@ -322,44 +322,6 @@
   `(set (for [tuple# (find-base ~@args) ]
           (vec tuple#))))
 
-(defmacro find-attr
- "Returns a set of unique attribute values (i.e. #{s/Any}). Any duplicate values will be
-  discarded. Usage:
-
-    (td/find-attr  :let    [$        (d/db *conn*)       ; assign multiple variables just like
-                           ?name    \"James Bond\"]      ;   in Clojure 'let' special form
-                   :find   [?e]
-                   :where  [ [?e :person/name ?name] ] )
-
-  It is an error if more than one attribute is returned."
-  [& args]
-  `(set (map only (find-base ~@args))))  ; return 1 attribute value from each entity
-
-; #todo allow ":find [:*]" to return entire entity map like "select * from" in sql
-(defmacro find-entity
- "Returns a result tuple for a single entity (i.e. [s/Any]). Usage:
-
-    (td/find-entity  :let    [$ (d/db *conn*)]
-                     :find   [?eid ?name]  ; <- output tuple shape
-                     :where  [ [?eid :person/name ?name      ]
-                               [?eid :location    \"Caribbean\"] ] )
-
-  It is an error if more than one matching entity is found."
-  [& args]
-  `(vec (only (find-base ~@args)))) ; return exactly 1 entity
-
-(defmacro find-value
- "Returns the value of a single attribute for a single entity.  Usage:
-
-    (td/find-value  :let    [$      (d/db *conn*)
-                             ?name  \"James Bond\"]
-                    :find   [?eid]  ; <- output tuple shape
-                    :where  [ [?eid :person/name ?name] ] )
-
-   It is an error if more than one matching value is found."
-  [& args]
-  `(only (find-entity ~@args))) ; retrieve 1 value from 1 entity
-
 ;---------------------------------------------------------------------------------------------------
 ; Query
 
@@ -387,6 +349,8 @@
             :where  ~where-vec
             :in     [ ~@let-syms ] }
         ~@let-srcs)))
+
+; #todo: delete old stuff (or move to .deprecated ns)
 
 ; #todo: rename :find -> :select or :return or :result ???
 (defmacro ^:deprecated query
